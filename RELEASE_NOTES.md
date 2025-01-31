@@ -4,104 +4,135 @@
 
 Multi-Swarm is a powerful framework for creating collaborative AI agent swarms, leveraging multiple LLM providers including Claude and Gemini. This first major release provides a stable API and comprehensive feature set for production use.
 
-### ✨ Key Features
+### ✨ Core Features
 
-- **Multi-Agent Architecture**
-  - Create collaborative agent swarms with distinct roles and capabilities
-  - Flexible agency configuration with customizable communication flows
-  - Easy-to-use agent template creation system
+#### Multi-Agent Architecture
+- Create collaborative agent swarms with distinct roles and capabilities
+- Define custom agents with specific instructions and tools
+- Flexible agency configuration with customizable communication flows
+- Easy-to-use agent template creation system
+- Automatic tool discovery and registration
 
-- **LLM Integration**
-  - Support for multiple LLM providers:
-    - Claude (Anthropic) with claude-3-sonnet model
-    - Gemini (Google) with gemini-pro model
-  - Configurable temperature and response parameters
-  - Automatic API key management and validation
+#### LLM Integration
+- Support for multiple LLM providers:
+  - Claude (Anthropic) with claude-3-sonnet model
+  - Gemini (Google) with gemini-pro model
+- Configurable temperature and response parameters
+- Automatic API key management and validation
+- Graceful error handling for API limits and failures
 
-- **Tool System**
-  - Built-in tool creation framework using Pydantic
-  - Automatic tool discovery and registration
-  - Type validation and error handling
-  - Easy-to-extend base classes for custom tools
+#### Tool System
+- Built-in tool creation framework using Pydantic
+- Type validation and error handling
+- Easy-to-extend base classes for custom tools
+- Automatic tool registration and discovery
+- Support for both synchronous and asynchronous tools
 
-- **Asynchronous Communication**
-  - Full async/await support
-  - Concurrent task processing
-  - Efficient message routing between agents
+#### Communication System
+- Full async/await support for concurrent operations
+- Efficient message routing between agents
+- Configurable communication flows
+- Built-in conversation history management
+- Support for complex multi-agent interactions
 
 ### 🔧 Technical Features
 
+#### Code Quality
 - Type hints throughout the codebase
-- Comprehensive test suite with pytest
-- CI/CD pipeline with GitHub Actions
-- Code coverage reporting
+- Comprehensive docstrings following Google style
 - PEP 8 compliant
+- Modular and extensible design
 
-### 📚 Documentation
+#### Testing & CI/CD
+- Comprehensive test suite with pytest
+- Async test support with pytest-asyncio
+- Code coverage reporting
+- Automated CI/CD pipeline with GitHub Actions
 
+#### Documentation
 - Detailed README with quick start guide
 - Advanced usage examples
 - API documentation
 - Contributing guidelines
+- Example implementations
 
-### 🛠️ Installation
+### 📚 Getting Started
 
+#### Installation
 ```bash
 pip install multi-swarm
 ```
 
-For development installation:
+For development:
 ```bash
 pip install multi-swarm[dev]
 ```
 
-### 🔑 Environment Setup
-
+#### Environment Setup
 Required environment variables:
 ```bash
 ANTHROPIC_API_KEY=your_claude_api_key
 GOOGLE_API_KEY=your_gemini_api_key
 ```
 
-### 🎯 Getting Started
-
-Basic example:
+#### Basic Usage
 ```python
-from multi_swarm import Agency, CEO, TrendsAnalyst
+from multi_swarm import Agency, BaseAgent
 
-# Initialize agents
-ceo = CEO()
-analyst = TrendsAnalyst()
+# Create custom agents
+class MyAgent(BaseAgent):
+    def __init__(self):
+        super().__init__(
+            name="MyAgent",
+            description="A custom agent for specific tasks",
+            instructions="path/to/instructions.md",
+            tools_folder="path/to/tools",
+            model="claude-3-sonnet",
+            temperature=0.7
+        )
 
-# Create agency
+# Initialize and run agency
 agency = Agency(
-    agents=[ceo, [ceo, analyst]],
+    agents=[MyAgent()],
     shared_instructions="agency_manifesto.md"
 )
-
-# Run the agency
 agency.run_demo()
 ```
 
 ### 🔜 Roadmap for v1.1.0
 
-- Additional LLM providers (OpenAI GPT-4, Cohere)
-- More built-in agent types
+#### New Features
+- Additional LLM providers:
+  - OpenAI GPT-4
+  - Cohere Command
+  - Anthropic Claude 3 Opus
 - Enhanced tool capabilities
 - Web interface and dashboard
+- Built-in visualization tools
+
+#### Improvements
+- Memory management system
 - Performance optimizations
-- Memory management improvements
+- Enhanced error handling
+- Better rate limiting
+- Caching system
+
+#### Developer Experience
+- CLI tool for agent creation
+- Interactive documentation
+- More example implementations
+- Enhanced debugging tools
 
 ### 🐛 Known Issues
 
 None at this time. This is a stable release ready for production use.
 
-### 📝 Notes
+### 📝 Requirements
 
-- Python 3.9+ required
-- API keys must be obtained separately from Anthropic and Google
-- Rate limits apply based on your API provider's terms
+- Python 3.9+
+- API keys for chosen LLM providers
+- Internet connection for API access
 
 ### 🙏 Acknowledgments
 
-Special thanks to all contributors who helped make this first major release possible. 
+Special thanks to all contributors who helped make this first major release possible. Your feedback, suggestions, and contributions have been invaluable in shaping Multi-Swarm into a robust framework for AI agent development. 
