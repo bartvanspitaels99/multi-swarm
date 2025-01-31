@@ -21,40 +21,34 @@ wheels/
 *.egg
 
 # Virtual Environment
-.env
-.venv
-env/
 venv/
+env/
 ENV/
-env.bak/
-venv.bak/
+.env
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-.DS_Store
+.project
+.pydevproject
+.settings
 
 # Testing
-.tox/
 .coverage
-.coverage.*
-.cache
-nosetests.xml
 coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
 htmlcov/
+.pytest_cache/
+.mypy_cache/
 
-# Documentation
-docs/_build/
-site/
+# Distribution
+dist/
+build/
 
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
+# Misc
+.DS_Store
+Thumbs.db
 
 # Logs
 *.log
@@ -65,24 +59,6 @@ log/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-
-# Distribution
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
 # Monitoring
 prometheus_data/
@@ -104,5 +80,4 @@ grafana_data/
 *~
 
 # PyPI credentials
-.pypirc
-.env 
+.pypirc 

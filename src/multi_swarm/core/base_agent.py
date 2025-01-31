@@ -13,6 +13,10 @@ class BaseAgent:
         model: str,
         temperature: float = 0.7,
     ):
+        # Validate temperature
+        if not isinstance(temperature, (int, float)) or not 0 <= temperature <= 1:
+            raise ValueError(f"Temperature must be between 0 and 1, got {temperature}")
+
         self.name = name
         self.description = description
         self.instructions = self._load_instructions(instructions)
@@ -22,9 +26,15 @@ class BaseAgent:
         
         # Initialize LLM clients
         if "claude" in model.lower():
-            self.client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+            api_key = os.getenv("ANTHROPIC_API_KEY")
+            if not api_key:
+                raise ValueError("ANTHROPIC_API_KEY environment variable is not set")
+            self.client = Anthropic(api_key=api_key)
         elif "gemini" in model.lower():
-            genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+            api_key = os.getenv("GOOGLE_API_KEY")
+            if not api_key:
+                raise ValueError("GOOGLE_API_KEY environment variable is not set")
+            genai.configure(api_key=api_key)
             self.client = genai
         else:
             raise ValueError(f"Unsupported model: {model}")

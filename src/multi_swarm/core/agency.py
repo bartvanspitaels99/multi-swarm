@@ -1,7 +1,7 @@
 import os
 import asyncio
 from typing import List, Tuple, Optional
-from .base_agent import BaseAgent
+from multi_swarm.core.base_agent import BaseAgent
 
 class Agency:
     def __init__(
@@ -9,27 +9,31 @@ class Agency:
         agents: List[BaseAgent | List[BaseAgent]],
         shared_instructions: Optional[str] = None,
     ):
+        if not agents:
+            raise ValueError("Agents list cannot be empty")
+
         # Extract the entry point agent (first agent)
-        if isinstance(agents[0], list):
-            raise ValueError("First agent must be the entry point agent, not a communication flow")
-        self.entry_point = agents[0]
-        
-        # Process communication flows
+        try:
+            if isinstance(agents[0], list):
+                raise ValueError("First agent must be the entry point, not a communication flow")
+            self.entry_point = agents[0]
+        except IndexError:
+            raise ValueError("Agents list cannot be empty")
+
+        # Extract communication flows
         self.communication_flows = []
-        for agent_or_flow in agents[1:]:
-            if isinstance(agent_or_flow, list):
-                if len(agent_or_flow) != 2:
+        for item in agents[1:]:
+            if isinstance(item, list):
+                if len(item) != 2:
                     raise ValueError("Communication flows must be pairs of agents")
-                self.communication_flows.append(tuple(agent_or_flow))
+                self.communication_flows.append((item[0], item[1]))
             else:
-                raise ValueError("All items after the first must be communication flows (lists of 2 agents)")
-        
-        # Load shared instructions
-        self.shared_instructions = ""
-        if shared_instructions and os.path.exists(shared_instructions):
-            with open(shared_instructions, 'r', encoding='utf-8') as f:
-                self.shared_instructions = f.read()
-    
+                # If it's a single agent, it can communicate with the entry point
+                self.communication_flows.append((self.entry_point, item))
+
+        # Set shared instructions
+        self.shared_instructions = shared_instructions or ""
+
     def run_demo(self):
         """Print welcome message and instructions for the demo."""
         print(f"\nWelcome to the {self.entry_point.name} Agency Demo!")
@@ -55,16 +59,6 @@ class Agency:
             print(f"\nAn error occurred: {str(e)}")
     
     async def process_message(self, message: str) -> str:
-        """Process a user message through the agency."""
-        # First, get response from entry point agent
+        """Process a message through the agency."""
         response = await self.entry_point.generate_response(message)
-        
-        # Process through communication flows
-        for source, target in self.communication_flows:
-            if source == self.entry_point:
-                # Forward the task to target agent
-                sub_response = await target.generate_response(response)
-                # Combine responses
-                response = f"{response}\n\nAnalysis from {target.name}:\n{sub_response}"
-        
         return response 
