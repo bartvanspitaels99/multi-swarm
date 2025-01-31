@@ -1,6 +1,15 @@
+"""Example CEO agent implementation for the Google Trends Analysis Agency."""
+
 from multi_swarm.core import BaseAgent
 
 class CEOAgent(BaseAgent):
+    """
+    Example CEO agent that coordinates Google Trends analysis.
+    
+    This is a template implementation to demonstrate agent creation.
+    In a real implementation, you would add actual tools and functionality.
+    """
+    
     def __init__(self):
         super().__init__(
             name="CEO",
