@@ -1,12 +1,16 @@
-from multi_swarm.core import Agency, BaseAgent as Agent
-from multi_swarm.ceo.ceo_agent import CEOAgent
-from multi_swarm.trends_analyst.trends_analyst import TrendsAnalyst
+"""
+Multi-Swarm Framework
 
-__version__ = "0.1.2"
+A framework for creating collaborative AI agent swarms.
+"""
+
+from multi_swarm.core import Agency, BaseAgent as Agent
+
+__version__ = "1.0.1"
+__author__ = "Bart Van Spitaels"
+__email__ = "bart.vanspitaels@gmail.com"
 
 __all__ = [
     "Agency",
     "Agent",
-    "CEOAgent",
-    "TrendsAnalyst",
 ] 

@@ -9,19 +9,22 @@ Multi-Swarm is built around several core concepts that work together to create p
 Agents are autonomous AI entities with specific roles and capabilities:
 
 - Each agent has a defined purpose and set of responsibilities
-- Agents use different LLM models based on their needs
-- Agents can have their own tools and instructions
-- Agents communicate with each other through structured channels
+- Agents automatically use the most appropriate LLM model based on their role
+- Agents can have their own tools, storage, and knowledge base
+- Agents communicate through structured conversation threads
 
 Example:
 ```python
-class AnalystAgent(BaseAgent):
+class AnalystAgent(Agent):
     def __init__(self):
         super().__init__(
             name="Data Analyst",
-            description="Expert in data analysis",
-            model="claude-3.5-sonnet",
-            temperature=0.5
+            description="Expert in data analysis and visualization",
+            instructions="analyst_instructions.md",
+            tools_folder="./tools",
+            # Framework will automatically select between Claude and Gemini
+            temperature=0.5,
+            use_code_interpreter=True
         )
 ```
 
@@ -30,13 +33,15 @@ class AnalystAgent(BaseAgent):
 Tools are specific actions that agents can perform:
 
 - Tools are Python classes that inherit from `BaseTool`
-- Tools can interact with external services, APIs, or local resources
+- Tools use Pydantic for input validation
+- Tools can access shared resources and external services
 - Tools are automatically loaded from the agent's tools folder
-- Tools can be shared between agents
 
 Example:
 ```python
-class DataVisualizationTool(BaseTool):
+from pydantic import BaseModel, Field
+
+class DataVisualizationTool(BaseModel):
     """Tool for creating data visualizations."""
     data: List[Dict] = Field(..., description="Data to visualize")
     chart_type: str = Field(..., description="Type of chart to create")
@@ -51,19 +56,22 @@ class DataVisualizationTool(BaseTool):
 Agencies are collections of agents working together:
 
 - Agencies define communication flows between agents
-- Agencies can share common instructions and goals
-- Agencies coordinate agent interactions
-- Agencies handle message routing and responses
+- Agencies can share resources (files, code interpreter, knowledge base)
+- Agencies manage conversation threads and message routing
+- Agencies provide monitoring and state management
 
 Example:
 ```python
 agency = Agency(
-    agents=[
-        manager,  # Entry point
-        [manager, developer],  # Manager can talk to developer
-        [developer, tester],   # Developer can talk to tester
+    name="Development Team",
+    description="Software development team simulation",
+    agents=[manager, developer, tester],
+    flows=[
+        (manager.name, developer.name),   # Manager can talk to developer
+        (developer.name, tester.name),    # Developer can talk to tester
     ],
-    shared_instructions="agency_manifesto.md"
+    shared_instructions="manifesto.md",
+    use_code_interpreter=True
 )
 ```
 
@@ -71,31 +79,58 @@ agency = Agency(
 
 ### 1. Communication Flows
 
-- **Directional Communication**: Agents communicate in defined directions
-- **Message Passing**: Agents can pass messages and delegate tasks
-- **Structured Responses**: Communication follows defined formats
-- **Async Support**: Communication is asynchronous by default
+- **Thread-Based**: All communication happens in conversation threads
+- **Directional**: Agents can only communicate in defined directions
+- **Metadata Support**: Messages can include metadata and file attachments
+- **History Tracking**: Full conversation history is maintained
 
-### 2. Model Selection
+### 2. Automatic Model Selection
 
-- **Task Matching**: Choose models based on task requirements
-- **Cost Efficiency**: Balance capability with cost
-- **Specialization**: Use models for their strengths
-- **Hybrid Approach**: Combine multiple models effectively
+The framework automatically selects the best model based on the agent's role:
+
+```python
+TASK_PREFERENCES = {
+    "code": "claude",      # Code generation and review
+    "research": "claude",  # Research and analysis
+    "planning": "claude",  # Strategic planning
+    "documentation": "claude",  # Documentation generation
+    "data": "gemini",     # Data processing and analysis
+    "integration": "gemini",  # API and system integration
+    "operations": "gemini",  # System operations
+    "monitoring": "gemini"  # System monitoring
+}
+```
 
 ### 3. Instructions
 
-- **Role Definition**: Clear description of agent responsibilities
-- **Process Workflows**: Step-by-step task execution guides
-- **Goals**: Specific objectives for each agent
-- **Collaboration Guidelines**: How to work with other agents
+Instructions are markdown files that define agent behavior:
 
-### 4. Tools and Capabilities
+```markdown
+# Agent Role
+Detailed description of the agent's role and purpose.
 
-- **Automatic Loading**: Tools are loaded from specified folders
-- **Type Safety**: Tools use Pydantic for validation
-- **Error Handling**: Built-in error management
-- **Extensibility**: Easy to add new capabilities
+# Goals
+1. Primary objective
+2. Secondary objectives
+3. Success criteria
+
+# Process Workflow
+1. Step-by-step process
+2. Decision points
+3. Interaction guidelines
+
+# Communication Guidelines
+1. How to interact with other agents
+2. Message formatting
+3. Response expectations
+```
+
+### 4. Advanced Features
+
+- **File Storage**: Agents can store and share files
+- **Code Interpreter**: Secure Python code execution environment
+- **RAG System**: Knowledge base with semantic search
+- **State Management**: Persistent storage of conversations and data
 
 ## Design Patterns
 
@@ -103,107 +138,73 @@ agency = Agency(
 
 ```python
 # Manager delegates to specialists
-agency = Agency([
-    manager,
-    [manager, specialist1],
-    [manager, specialist2],
-])
+agency = Agency(
+    name="Management Team",
+    description="Hierarchical team structure",
+    agents=[manager, specialist1, specialist2],
+    flows=[
+        (manager.name, specialist1.name),
+        (manager.name, specialist2.name)
+    ]
+)
 ```
 
 ### 2. Peer Collaboration
 
 ```python
-# Agents can work together as peers
-agency = Agency([
-    coordinator,
-    [peer1, peer2],
-    [peer2, peer1],
-])
+# Agents work together as peers
+agency = Agency(
+    name="Research Team",
+    description="Collaborative research team",
+    agents=[coordinator, peer1, peer2],
+    flows=[
+        (peer1.name, peer2.name),
+        (peer2.name, peer1.name)
+    ]
+)
 ```
 
 ### 3. Pipeline Processing
 
 ```python
 # Sequential processing chain
-agency = Agency([
-    intake,
-    [intake, processor],
-    [processor, reviewer],
-    [reviewer, publisher],
-])
+agency = Agency(
+    name="Content Pipeline",
+    description="Content processing workflow",
+    agents=[intake, processor, reviewer, publisher],
+    flows=[
+        (intake.name, processor.name),
+        (processor.name, reviewer.name),
+        (reviewer.name, publisher.name)
+    ]
+)
 ```
 
 ## Best Practices
 
 1. **Agent Design**
-   - Give agents focused responsibilities
-   - Use appropriate model for each role
-   - Provide clear, detailed instructions
-   - Implement necessary error handling
+   - Write clear, task-focused descriptions
+   - Let the framework handle model selection
+   - Enable only needed features (RAG, code interpreter, etc.)
+   - Implement proper error handling
 
 2. **Tool Implementation**
-   - Create reusable, focused tools
-   - Validate inputs with Pydantic
+   - Create focused, reusable tools
+   - Use Pydantic for input validation
    - Handle errors gracefully
-   - Document tool functionality
+   - Document tool functionality clearly
 
 3. **Agency Structure**
-   - Define clear communication paths
-   - Avoid circular dependencies
-   - Balance workload between agents
-   - Monitor performance and costs
+   - Define minimal necessary communication paths
+   - Group related agents together
+   - Share resources appropriately
+   - Monitor performance and usage
 
-4. **Error Handling**
-   - Implement retries for API calls
-   - Handle rate limits appropriately
-   - Log errors for debugging
-   - Graceful degradation
-
-## Common Patterns
-
-### 1. Manager-Worker Pattern
-
-```python
-class ManagerAgent(BaseAgent):
-    """Coordinates work and delegates tasks."""
-    pass
-
-class WorkerAgent(BaseAgent):
-    """Executes specific tasks."""
-    pass
-
-agency = Agency([
-    manager,
-    [manager, worker1],
-    [manager, worker2],
-])
-```
-
-### 2. Pipeline Pattern
-
-```python
-class ProcessingPipeline:
-    def __init__(self):
-        self.agency = Agency([
-            self.intake,
-            [self.intake, self.processor],
-            [self.processor, self.validator],
-            [self.validator, self.publisher],
-        ])
-```
-
-### 3. Expert System Pattern
-
-```python
-class ExpertSystem:
-    def __init__(self):
-        self.agency = Agency([
-            self.coordinator,
-            [self.coordinator, self.expert1],
-            [self.coordinator, self.expert2],
-            [self.coordinator, self.expert3],
-        ])
-```
+4. **Resource Management**
+   - Use appropriate storage paths
+   - Clean up temporary files
+   - Manage memory usage
+   - Handle concurrent access
 
 ## Learn More
 

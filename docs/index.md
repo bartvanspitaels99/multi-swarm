@@ -1,66 +1,201 @@
-# Multi-Swarm Framework
+# Multi-Swarm Framework Documentation
 
-Multi-Swarm is a powerful framework for creating collaborative AI agents using multiple LLM providers. It allows you to leverage the unique strengths of different language models like Claude and Gemini in a coordinated system.
+Multi-Swarm is a powerful framework for creating collaborative AI agent systems (Agencies). It enables automatic model selection between Claude and Gemini based on agent roles, with built-in support for advanced features like RAG, Code Interpreter, and File Storage.
 
-## Key Features
-
-- **Multi-LLM Support**: Seamlessly integrate multiple LLM providers (Claude and Gemini) in your agent swarms
-- **Flexible Agent Architecture**: Create custom agents with specific roles and capabilities
-- **Structured Communication**: Define clear communication flows between agents
-- **Easy Integration**: Simple API for creating and running agent swarms
-- **Built-in Monitoring**: Track performance, costs, and usage across different providers
-
-## Quick Example
+## Quick Start
 
 ```python
-from multi_swarm import Agency, CEOAgent, TrendsAnalyst
+from multi_swarm import Agency, Agent
 
-# Initialize agents
-ceo = CEOAgent()  # Uses Gemini 2.0 Pro
-analyst = TrendsAnalyst()  # Uses Claude 3.5 Sonnet
+# Create specialized agents
+dev = DevAgent(
+    name="Developer",
+    description="Code generation and technical analysis",
+    instructions="dev_instructions.md",
+    tools_folder="./tools",
+    # Framework automatically selects Claude for code tasks
+    use_code_interpreter=True
+)
+
+analyst = DataAnalyst(
+    name="Data Analyst",
+    description="Data processing and visualization",
+    instructions="analyst_instructions.md",
+    tools_folder="./tools",
+    # Framework automatically selects Gemini for data tasks
+    use_rag=True
+)
 
 # Create agency with communication flows
-agency = Agency(
-    agents=[
-        ceo,  # CEO is the entry point
-        [ceo, analyst],  # CEO can delegate to analyst
-    ],
+agency = Agency([
+    dev,  # Entry point
+    [dev, analyst]  # Dev can communicate with Analyst
+],
     shared_instructions="agency_manifesto.md"
 )
 
-# Run the agency
+# Run agency in terminal
 agency.run_demo()
 ```
 
 ## Installation
 
+1. Install via pip:
 ```bash
-pip install multi_swarm
+pip install multi-swarm
 ```
 
-## Environment Setup
+2. Set up environment variables:
+```bash
+# For Claude integration
+export ANTHROPIC_API_KEY=your_api_key
 
-Create a `.env` file in your project root:
-
-```env
-GOOGLE_API_KEY=your_gemini_api_key
-ANTHROPIC_API_KEY=your_claude_api_key
+# For Gemini integration
+export GOOGLE_API_KEY=your_api_key
 ```
 
-## Why Multi-Swarm?
+3. For Cursor AI users:
+```bash
+# Copy .cursorrules to root directory
+cp path/to/multi-swarm/.cursorrules .
+```
 
-1. **Leverage Model Strengths**: Different LLMs excel at different tasks. Multi-Swarm lets you use each model where it performs best.
+## Core Concepts
 
-2. **Structured Collaboration**: Define clear roles and communication paths between agents, ensuring efficient coordination.
+1. **Agents**: Specialized AI agents with distinct roles and capabilities
+   - Automatic model selection (Claude/Gemini)
+   - Role-specific tools and instructions
+   - Advanced features (RAG, Code Interpreter, File Storage)
 
-3. **Production Ready**: Built with monitoring, error handling, and scalability in mind.
+2. **Agencies**: Collections of collaborating agents
+   - Structured communication flows
+   - Thread-based conversations
+   - Resource sharing and coordination
 
-4. **Easy to Extend**: Create custom agents and tools to fit your specific needs.
+3. **Tools**: Custom actions agents can perform
+   - Input validation with Pydantic
+   - Error handling and resource management
+   - Async support and progress tracking
 
-## Getting Started
+## Model Selection
 
-Check out our [Quick Start Guide](getting-started/quickstart.md) to create your first agent swarm, or dive into the [Examples](examples/dev-agency.md) to see Multi-Swarm in action.
+The framework automatically selects the most appropriate model based on agent roles:
+
+### Claude (Anthropic)
+- Code generation and review
+- Complex reasoning tasks
+- Technical documentation
+- API design
+- Strategic planning
+
+### Gemini (Google)
+- Data processing and analysis
+- System operations
+- Real-time tasks
+- Pattern recognition
+- Monitoring and alerting
+
+## Documentation Sections
+
+### Getting Started
+- [Installation Guide](getting-started/installation.md)
+- [Quick Start Guide](getting-started/quickstart.md)
+- [Core Concepts](getting-started/concepts.md)
+
+### User Guide
+- [Creating Agents](user-guide/creating-agents.md)
+- [Creating Tools](user-guide/creating-tools.md)
+- [Creating Agencies](user-guide/creating-agencies.md)
+- [Communication Flows](user-guide/communication-flows.md)
+
+### LLM Providers
+- [Claude Integration](providers/claude.md)
+- [Gemini Integration](providers/gemini.md)
+
+### Examples
+- [Development Agency](examples/dev-agency.md)
+- [Research Agency](examples/research-agency.md)
+- [Data Processing Agency](examples/data-agency.md)
+
+### API Reference
+- [Agency API](api/agency.md)
+- [Agent API](api/agents.md)
+- [Tool API](api/tools.md)
+
+## Advanced Features
+
+### 1. Knowledge Base (RAG)
+```python
+agent = Agent(
+    name="Researcher",
+    use_rag=True,
+    rag_config={
+        "index_name": "research_data",
+        "embedding_model": "all-MiniLM-L6-v2",
+        "chunk_size": 1000
+    }
+)
+```
+
+### 2. Code Interpreter
+```python
+agent = Agent(
+    name="Developer",
+    use_code_interpreter=True,
+    interpreter_config={
+        "timeout": 30,
+        "memory_limit": "1G"
+    }
+)
+```
+
+### 3. File Storage
+```python
+agent = Agent(
+    name="Data Manager",
+    use_file_storage=True,
+    storage_config={
+        "base_path": "./data",
+        "max_size": "5G"
+    }
+)
+```
+
+## Best Practices
+
+1. **Agent Design**
+   - Clear, focused roles
+   - Detailed descriptions for model selection
+   - Comprehensive instructions
+   - Appropriate tool selection
+
+2. **Resource Management**
+   - Enable RAG for knowledge-intensive tasks
+   - Use Code Interpreter for development
+   - Implement proper error handling
+   - Monitor resource usage
+
+3. **Performance Optimization**
+   - Optimize message routing
+   - Use appropriate batch sizes
+   - Monitor response times
+   - Cache frequently used data
 
 ## Contributing
 
-We welcome contributions! See our [Contributing Guide](contributing.md) for details on how to get involved. 
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## Support
+
+- [GitHub Issues](https://github.com/yourusername/multi-swarm/issues)
+- [Documentation](https://multi-swarm.readthedocs.io)
+- [Discord Community](https://discord.gg/multi-swarm)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 

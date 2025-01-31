@@ -2,7 +2,7 @@
 
 This document provides detailed information about the core classes and functions in Multi-Swarm.
 
-## BaseAgent
+## Agent
 
 The foundation class for all agents in Multi-Swarm.
 
@@ -15,57 +15,108 @@ def __init__(
     description: str,
     instructions: str,
     tools_folder: str,
-    model: str,
+    llm_provider: Optional[str] = None,
+    provider_config: Optional[Dict[str, Any]] = None,
     temperature: float = 0.7,
-    provider_config: Optional[Dict] = None,
-    retry_config: Optional[Dict] = None,
-    streaming: bool = False
+    storage_path: Optional[str] = None,
+    use_file_storage: bool = False,
+    use_rag: bool = False,
+    use_code_interpreter: bool = False
 )
 ```
 
 #### Parameters
 
 - **name** (str): Unique identifier for the agent
-- **description** (str): Description of the agent's role
+- **description** (str): Description of the agent's role and capabilities
 - **instructions** (str): Path to instructions file
 - **tools_folder** (str): Path to tools directory
-- **model** (str): LLM model identifier
+- **llm_provider** (str, optional): LLM provider to use ("claude" or "gemini")
+- **provider_config** (Dict, optional): Provider-specific settings
 - **temperature** (float, optional): Response randomness (0.0-1.0)
-- **provider_config** (Dict, optional): Model-specific settings
-- **retry_config** (Dict, optional): Error handling settings
-- **streaming** (bool, optional): Enable response streaming
+- **storage_path** (str, optional): Path for persistent storage
+- **use_file_storage** (bool): Enable file storage capabilities
+- **use_rag** (bool): Enable RAG capabilities
+- **use_code_interpreter** (bool): Enable code interpreter
+
+### Automatic Model Selection
+
+The framework automatically selects the most appropriate LLM model based on the agent's description:
+
+```python
+TASK_PREFERENCES = {
+    "code": "claude",      # Code generation and review
+    "research": "claude",  # Research and analysis
+    "planning": "claude",  # Strategic planning
+    "documentation": "claude",  # Documentation generation
+    "data": "gemini",     # Data processing and analysis
+    "integration": "gemini",  # API and system integration
+    "operations": "gemini",  # System operations
+    "monitoring": "gemini"  # System monitoring
+}
+```
 
 ### Methods
 
 #### process_message
 
 ```python
-async def process_message(
+def process_message(
     self,
-    message: str,
-    **kwargs
-) -> str:
-    """Process an incoming message and generate a response."""
+    thread_id: str,
+    content: str,
+    role: str = "user",
+    metadata: Dict = None
+) -> Message:
+    """Process a message in a thread."""
 ```
 
-#### load_instructions
+#### create_thread
 
 ```python
-def load_instructions(
+def create_thread(
     self,
-    path: str
-) -> str:
-    """Load agent instructions from file."""
+    metadata: Dict = None
+) -> Thread:
+    """Create a new conversation thread."""
 ```
 
-#### load_tools
+#### upload_file
 
 ```python
-def load_tools(
+def upload_file(
     self,
-    path: str
-) -> List[BaseTool]:
-    """Load tools from directory."""
+    file: Any,
+    filename: str,
+    purpose: str = "attachment",
+    metadata: Dict = None
+):
+    """Upload a file to storage."""
+```
+
+#### execute_code
+
+```python
+def execute_code(
+    self,
+    code: str,
+    language: str = "python",
+    additional_files: Dict[str, str] = None,
+    environment: Dict[str, str] = None
+):
+    """Execute code in the secure environment."""
+```
+
+#### search_knowledge
+
+```python
+def search_knowledge(
+    self,
+    query: str,
+    k: int = 5,
+    threshold: float = None
+):
+    """Search the knowledge base using RAG."""
 ```
 
 ## Agency
@@ -77,252 +128,162 @@ The main class for managing agent interactions.
 ```python
 def __init__(
     self,
-    agents: List[Union[BaseAgent, List[BaseAgent]]],
-    shared_instructions: str,
-    config: Optional[Dict] = None
+    name: str,
+    description: str,
+    agents: List[Agent],
+    flows: List[Tuple[str, str]],
+    storage_path: Optional[str] = None,
+    shared_instructions: Optional[str] = None,
+    default_temperature: float = 0.7,
+    default_max_tokens: int = 4096,
+    use_code_interpreter: bool = False,
+    use_rag: bool = False,
+    use_file_storage: bool = False
 )
 ```
 
 #### Parameters
 
-- **agents** (List): Agents and communication flows
-- **shared_instructions** (str): Path to shared instructions
-- **config** (Dict, optional): Agency configuration
+- **name** (str): Name of the agency
+- **description** (str): Description of the agency's purpose
+- **agents** (List[Agent]): List of agents in the agency
+- **flows** (List[Tuple[str, str]]): Communication flows between agents
+- **storage_path** (str, optional): Path for persistent storage
+- **shared_instructions** (str, optional): Path to shared instructions
+- **default_temperature** (float): Default temperature for agents
+- **default_max_tokens** (int): Default max tokens for agents
+- **use_code_interpreter** (bool): Enable code interpreter
+- **use_rag** (bool): Enable RAG capabilities
+- **use_file_storage** (bool): Enable file storage
 
 ### Methods
 
-#### process_message
+#### send_message
 
 ```python
-async def process_message(
+def send_message(
     self,
-    message: str,
-    from_agent: Optional[str] = None,
-    to_agent: Optional[str] = None
-) -> str:
-    """Process a message through the agency."""
+    source: str,
+    target: str,
+    content: str,
+    metadata: Dict = None
+) -> Message:
+    """Send a message from one agent to another."""
 ```
 
 #### broadcast_message
 
 ```python
-async def broadcast_message(
+def broadcast_message(
     self,
-    message: str,
-    from_agent: str
-) -> List[str]:
-    """Send a message to all agents."""
+    source: str,
+    content: str,
+    metadata: Dict = None
+) -> List[Message]:
+    """Broadcast a message to all connected agents."""
 ```
 
-#### chain_message
+#### run_demo
 
 ```python
-async def chain_message(
-    self,
-    message: str,
-    chain: List[str]
-) -> str:
-    """Process a message through a chain of agents."""
+def run_demo(self):
+    """Run an interactive demo of the agency."""
 ```
 
-## BaseTool
+## Thread
 
-Base class for creating agent tools.
-
-### Constructor
+Represents a conversation thread between agents.
 
 ```python
-class BaseTool(BaseModel):
-    """Base class for all tools."""
-    pass
+class Thread(BaseModel):
+    id: str
+    messages: List[Message]
+    metadata: Dict
+    created_at: datetime
+    last_active_at: datetime
+    status: str
 ```
 
-### Required Methods
+## Message
 
-#### run
+Represents a message in a conversation thread.
 
 ```python
-def run(self) -> str:
-    """Execute the tool's functionality."""
-    raise NotImplementedError
+class Message(BaseModel):
+    role: str
+    content: str
+    agent_name: str
+    file_ids: List[str]
+    metadata: Dict
+    created_at: datetime
 ```
 
-## Exceptions
+## Configuration
 
-### AgentError
+### Environment Variables
 
-Base exception for agent-related errors.
+```bash
+# Required for Claude
+ANTHROPIC_API_KEY=your_claude_key
 
-```python
-class AgentError(Exception):
-    """Base class for agent exceptions."""
-    pass
+# Required for Gemini
+GOOGLE_API_KEY=your_gemini_key
 ```
 
-### CommunicationError
-
-Exception for communication failures.
+### Default Configurations
 
 ```python
-class CommunicationError(Exception):
-    """Raised when communication between agents fails."""
-    pass
+# Claude Configuration
+CLAUDE_CONFIG = {
+    "model": "claude-3-5-sonnet-latest",
+    "max_tokens": 4096,
+    "api_version": "2024-03"
+}
+
+# Gemini Configuration
+GEMINI_CONFIG = {
+    "model": "gemini-2.0-flash-exp",
+    "max_tokens": 4096,
+    "api_version": "2024-01"
+}
 ```
 
-### ToolError
-
-Exception for tool execution failures.
+## Usage Example
 
 ```python
-class ToolError(Exception):
-    """Raised when a tool fails to execute."""
-    pass
-```
+from multi_swarm import Agency, Agent
 
-## Utility Functions
-
-### load_dotenv
-
-```python
-def load_dotenv(
-    path: Optional[str] = None
-) -> bool:
-    """Load environment variables from .env file."""
-```
-
-### setup_logging
-
-```python
-def setup_logging(
-    level: str = "INFO",
-    file: Optional[str] = None
-) -> None:
-    """Configure logging for Multi-Swarm."""
-```
-
-### validate_config
-
-```python
-def validate_config(
-    config: Dict
-) -> Dict:
-    """Validate and normalize configuration."""
-```
-
-## Constants
-
-```python
-# Model identifiers
-CLAUDE_MODELS = [
-    "claude-3.5-opus",
-    "claude-3.5-sonnet",
-    "claude-3.5-haiku"
-]
-
-GEMINI_MODELS = [
-    "gemini-2.0-pro",
-    "gemini-2.0-pro-vision"
-]
-
-# Default configurations
-DEFAULT_TEMPERATURE = 0.7
-MAX_RETRIES = 3
-TIMEOUT_SECONDS = 300
-
-# Error messages
-INVALID_MODEL_ERROR = "Invalid model specified: {}"
-INVALID_ROUTE_ERROR = "Invalid communication route: {} -> {}"
-TOOL_LOAD_ERROR = "Failed to load tool from {}: {}"
-```
-
-## Type Definitions
-
-```python
-from typing import TypeVar, Generic, Protocol
-
-AgentType = TypeVar("AgentType", bound=BaseAgent)
-ToolType = TypeVar("ToolType", bound=BaseTool)
-
-class MessageProcessor(Protocol):
-    async def process_message(self, message: str) -> str:
-        ...
-
-class ToolExecutor(Protocol):
-    def run(self) -> str:
-        ...
-```
-
-## Configuration Schema
-
-```python
-from pydantic import BaseModel, Field
-
-class AgentConfig(BaseModel):
-    name: str
-    description: str
-    instructions: str
-    tools_folder: str
-    model: str
-    temperature: float = Field(default=0.7, ge=0.0, le=1.0)
-    provider_config: Optional[Dict] = None
-    retry_config: Optional[Dict] = None
-    streaming: bool = False
-
-class AgencyConfig(BaseModel):
-    max_rounds: int = Field(default=10, ge=1)
-    timeout: int = Field(default=300, ge=0)
-    retry_policy: Dict = Field(default_factory=dict)
-```
-
-## Usage Examples
-
-### Creating an Agent
-
-```python
-from multi_swarm import BaseAgent
-
-class CustomAgent(BaseAgent):
+# Create custom agent
+class DevelopmentAgent(Agent):
     def __init__(self):
         super().__init__(
-            name="Custom Agent",
-            description="Example agent",
+            name="Developer",
+            description="Code generation and review specialist",
             instructions="instructions.md",
             tools_folder="./tools",
-            model="claude-3.5-sonnet"
+            # Let the framework choose between Claude and Gemini
+            temperature=0.7,
+            use_code_interpreter=True
         )
-```
 
-### Creating an Agency
+# Create agency
+dev_agent = DevelopmentAgent()
+qa_agent = QAAgent()
 
-```python
-from multi_swarm import Agency
+agency = Agency(
+    name="Development Team",
+    description="Software development team simulation",
+    agents=[dev_agent, qa_agent],
+    flows=[
+        (dev_agent.name, qa_agent.name),
+        (qa_agent.name, dev_agent.name)
+    ],
+    shared_instructions="manifesto.md",
+    use_code_interpreter=True
+)
 
-def create_agency():
-    agent1 = CustomAgent()
-    agent2 = AnotherAgent()
-    
-    agency = Agency(
-        agents=[
-            agent1,
-            [agent1, agent2]
-        ],
-        shared_instructions="manifesto.md"
-    )
-    return agency
-```
-
-### Error Handling
-
-```python
-try:
-    agency = create_agency()
-    response = await agency.process_message("Test")
-except AgentError as e:
-    logger.error(f"Agent error: {e}")
-except CommunicationError as e:
-    logger.error(f"Communication error: {e}")
-except Exception as e:
-    logger.error(f"Unexpected error: {e}")
+# Run interactive demo
+agency.run_demo()
 ```
 
 ## Learn More

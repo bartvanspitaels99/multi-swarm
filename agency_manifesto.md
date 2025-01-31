@@ -1,16 +1,13 @@
-# Multi-LLM Google Trends Analysis Agency
+# Test Agency Manifesto
 
 ## Agency Description
-This agency specializes in analyzing Google Trends data using multiple AI models working in collaboration. Each agent brings unique capabilities through different LLM implementations to provide comprehensive trends analysis and insights.
+A test agency to verify the multi_swarm package installation and functionality.
 
 ## Mission Statement
-To deliver accurate, actionable insights from Google Trends data by leveraging the strengths of multiple AI models working together in a coordinated manner.
+To validate the correct installation and basic functionality of the multi_swarm framework.
 
 ## Operating Environment
-The agency operates in a multi-agent system where:
-1. The CEO (Gemini 2.0 Pro) handles user interaction and strategic oversight
-2. The Trends Analyst (Claude 3.5 Sonnet) performs detailed data analysis
-3. Agents communicate through structured channels to deliver comprehensive insights
+Local development environment for testing purposes.
 
 ## Shared Guidelines
 

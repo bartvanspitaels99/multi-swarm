@@ -1,273 +1,226 @@
 # Creating Agents
 
-This guide explains how to create custom agents in Multi-Swarm. Agents are the core building blocks of your AI system, each with specific roles and capabilities.
+Agents are the core building blocks of Multi-Swarm. Each agent has specific roles, capabilities, and tools.
 
-## Basic Agent Structure
-
-Every agent inherits from the `BaseAgent` class:
+## Basic Agent Creation
 
 ```python
-from multi_swarm import BaseAgent
+from multi_swarm import Agent
 
-class CustomAgent(BaseAgent):
+class DataAnalyst(Agent):
     def __init__(self):
         super().__init__(
-            name="Custom Agent",
-            description="Description of the agent's role",
-            instructions="path/to/instructions.md",
+            name="Data Analyst",
+            description="Expert in data analysis and visualization",
+            instructions="analyst_instructions.md",
             tools_folder="./tools",
-            model="claude-3.5-sonnet",
-            temperature=0.5
+            temperature=0.5,
+            use_rag=True  # Enable knowledge base
         )
 ```
 
-## Required Parameters
+## Agent Parameters
 
-1. **name** (str)
-   - Unique identifier for the agent
-   - Should be descriptive of the role
-   - Used in logging and debugging
+- **name** (str): Unique identifier for the agent
+- **description** (str): Detailed description of agent's role and capabilities
+- **instructions** (str): Path to markdown file containing agent instructions
+- **tools_folder** (str): Path to folder containing agent's tools
+- **temperature** (float, optional): Model temperature (0.0-1.0)
+- **use_rag** (bool, optional): Enable Retrieval-Augmented Generation
+- **llm_provider** (str, optional): Manually specify LLM provider ("claude" or "gemini")
+- **provider_config** (dict, optional): Provider-specific configuration
 
-2. **description** (str)
-   - Detailed description of the agent's purpose
-   - Helps other agents understand its role
-   - Used in communication flows
+## Automatic Model Selection
 
-3. **instructions** (str)
-   - Path to the markdown file containing agent instructions
-   - Defines behavior and responsibilities
-   - Can be updated without changing code
+The framework automatically selects the most appropriate model based on the agent's description and role:
 
-4. **tools_folder** (str)
-   - Directory containing agent-specific tools
-   - Tools are automatically loaded
-   - Can be shared between agents
+### Claude (Anthropic)
+- Complex reasoning tasks
+- Code generation and review
+- Technical writing
+- API design
+- Documentation
 
-5. **model** (str)
-   - LLM model to use (e.g., "claude-3.5-sonnet", "gemini-2.0-pro")
-   - Chosen based on task requirements
-   - Affects capabilities and costs
+### Gemini (Google)
+- Data processing
+- System operations
+- Real-time tasks
+- Pattern recognition
+- Monitoring
 
-6. **temperature** (float)
-   - Controls response randomness
-   - 0.0 to 1.0 range
-   - Lower for technical tasks, higher for creative tasks
+## Agent Instructions
 
-## Optional Parameters
-
-```python
-class AdvancedAgent(BaseAgent):
-    def __init__(self):
-        super().__init__(
-            name="Advanced Agent",
-            model="claude-3.5-opus",
-            provider_config={
-                "api_version": "2024-03",
-                "max_tokens": 4096,
-                "top_p": 0.9,
-                "top_k": 50
-            },
-            retry_config={
-                "max_retries": 3,
-                "backoff_factor": 2,
-                "retry_on": ["rate_limit", "server_error"]
-            },
-            streaming=True
-        )
-```
-
-1. **provider_config** (dict)
-   - Model-specific configuration
-   - API versions
-   - Token limits
-   - Safety settings
-
-2. **retry_config** (dict)
-   - Error handling settings
-   - Retry attempts
-   - Backoff strategy
-   - Error types to retry on
-
-3. **streaming** (bool)
-   - Enable/disable response streaming
-   - Default: False
-   - Useful for long responses
-
-## Creating Instructions
-
-Instructions are markdown files that define agent behavior:
+Create an `instructions.md` file to define the agent's behavior:
 
 ```markdown
 # Agent Role
 
-Detailed description of the agent's role and purpose.
+Detailed description of the agent's role and responsibilities.
 
 # Goals
 
-1. Primary objective
-2. Secondary objectives
-3. Success criteria
+- Goal 1: Description
+- Goal 2: Description
+- Goal 3: Description
 
 # Process Workflow
 
-1. Step-by-step process
-2. Decision points
-3. Interaction guidelines
+1. Step 1: Description
+2. Step 2: Description
+3. Step 3: Description
 
-# Communication Guidelines
+# Guidelines
 
-1. How to interact with other agents
-2. Message formatting
-3. Response expectations
+- Guideline 1
+- Guideline 2
+- Guideline 3
 ```
 
 ## Advanced Features
 
-### 1. Custom Message Processing
+### 1. Knowledge Base (RAG)
 
 ```python
-class CustomProcessor(BaseAgent):
-    async def process_message(self, message: str) -> str:
-        """Override default message processing."""
-        # Custom preprocessing
-        processed = await self._preprocess(message)
-        
-        # Get model response
-        response = await self._generate_response(processed)
-        
-        # Custom postprocessing
-        return await self._postprocess(response)
-```
-
-### 2. State Management
-
-```python
-class StatefulAgent(BaseAgent):
+class ResearchAgent(Agent):
     def __init__(self):
-        super().__init__(name="Stateful Agent")
-        self.conversation_history = []
-        self.context = {}
-    
-    async def process_message(self, message: str) -> str:
-        # Update state
-        self.conversation_history.append(message)
-        
-        # Process with context
-        response = await super().process_message(
-            self._build_context(message)
+        super().__init__(
+            name="Researcher",
+            description="Research and analysis specialist",
+            instructions="researcher_instructions.md",
+            tools_folder="./tools",
+            use_rag=True,
+            rag_config={
+                "index_name": "research_data",
+                "embedding_model": "all-MiniLM-L6-v2",
+                "chunk_size": 1000
+            }
         )
-        
-        # Update state with response
-        self.conversation_history.append(response)
-        return response
 ```
 
-### 3. Event Handlers
+### 2. Code Interpreter
 
 ```python
-class EventAwareAgent(BaseAgent):
-    async def on_start(self):
-        """Called when agent starts."""
-        await self._load_resources()
+class DevAgent(Agent):
+    def __init__(self):
+        super().__init__(
+            name="Developer",
+            description="Software development and testing",
+            instructions="dev_instructions.md",
+            tools_folder="./tools",
+            use_code_interpreter=True,
+            interpreter_config={
+                "timeout": 30,
+                "memory_limit": "1G"
+            }
+        )
+```
 
-    async def on_error(self, error: Exception):
-        """Called on processing error."""
-        await self._log_error(error)
+### 3. File Storage
 
-    async def on_shutdown(self):
-        """Called when agent stops."""
-        await self._cleanup_resources()
+```python
+class DataAgent(Agent):
+    def __init__(self):
+        super().__init__(
+            name="Data Manager",
+            description="Data management and processing",
+            instructions="data_instructions.md",
+            tools_folder="./tools",
+            use_file_storage=True,
+            storage_config={
+                "base_path": "./data",
+                "max_size": "5G"
+            }
+        )
+```
+
+## Error Handling
+
+```python
+from multi_swarm.exceptions import AgentError
+
+try:
+    response = await agent.process_message(message)
+except AgentError as e:
+    if "tool_error" in str(e):
+        # Handle tool execution error
+        await handle_tool_error(e)
+    elif "provider_error" in str(e):
+        # Handle LLM provider error
+        await handle_provider_error(e)
+    else:
+        # Handle other agent errors
+        raise
 ```
 
 ## Best Practices
 
-1. **Role Clarity**
-   - Give agents focused responsibilities
-   - Avoid overlapping roles
-   - Clear communication patterns
+1. **Agent Design**
+   - Clear, focused roles
+   - Detailed descriptions
+   - Comprehensive instructions
+   - Appropriate tool selection
 
-2. **Model Selection**
-   - Match model to task requirements
-   - Consider cost-performance trade-offs
-   - Use appropriate temperature settings
+2. **Resource Management**
+   - Enable RAG for knowledge-intensive tasks
+   - Use Code Interpreter for development tasks
+   - Implement proper error handling
+   - Monitor resource usage
 
-3. **Error Handling**
-   - Implement comprehensive error handling
-   - Use retry mechanisms
-   - Log errors for debugging
+3. **Performance Optimization**
+   - Optimize prompt length
+   - Use appropriate batch sizes
+   - Monitor response times
+   - Cache frequently used data
 
-4. **Resource Management**
-   - Clean up resources properly
-   - Monitor token usage
-   - Implement rate limiting
+## Examples
 
-## Common Patterns
-
-### 1. Specialist Agent
+### 1. Development Agent
 
 ```python
-class SpecialistAgent(BaseAgent):
-    """Agent focused on a specific domain."""
+class DevAgent(Agent):
     def __init__(self):
         super().__init__(
-            name="Security Expert",
-            model="claude-3.5-sonnet",
-            temperature=0.3  # Low for precise analysis
+            name="Developer",
+            description="Expert in software development, code review, and testing",
+            instructions="dev_instructions.md",
+            tools_folder="./tools",
+            use_code_interpreter=True,
+            use_rag=True  # For codebase knowledge
         )
 ```
 
-### 2. Coordinator Agent
+### 2. Data Analysis Agent
 
 ```python
-class CoordinatorAgent(BaseAgent):
-    """Agent that manages other agents."""
+class AnalystAgent(Agent):
     def __init__(self):
         super().__init__(
-            name="Project Coordinator",
-            model="gemini-2.0-pro",
-            temperature=0.7  # Higher for creative planning
+            name="Data Analyst",
+            description="Specialist in data processing and visualization",
+            instructions="analyst_instructions.md",
+            tools_folder="./tools",
+            use_file_storage=True,
+            use_rag=True
         )
 ```
 
-### 3. Pipeline Agent
+### 3. Research Agent
 
 ```python
-class PipelineAgent(BaseAgent):
-    """Agent that processes data in stages."""
+class ResearchAgent(Agent):
     def __init__(self):
         super().__init__(
-            name="Data Pipeline",
-            model="claude-3.5-sonnet",
-            streaming=True  # Enable for large datasets
+            name="Researcher",
+            description="Expert in research, analysis, and report generation",
+            instructions="researcher_instructions.md",
+            tools_folder="./tools",
+            use_rag=True,
+            use_file_storage=True
         )
-```
-
-## Testing Agents
-
-```python
-async def test_agent():
-    agent = CustomAgent()
-    
-    # Test basic functionality
-    response = await agent.process_message("Test message")
-    assert response is not None
-    
-    # Test error handling
-    try:
-        await agent.process_message(None)
-    except ValueError:
-        print("Error handled correctly")
-    
-    # Test with different inputs
-    test_cases = ["case1", "case2", "case3"]
-    for case in test_cases:
-        response = await agent.process_message(case)
-        validate_response(response)
 ```
 
 ## Learn More
 
 - [Creating Tools](creating-tools.md)
-- [Communication Flows](communication-flows.md)
-- [API Reference](../api/agents.md)
-- [Example Projects](../examples/dev-agency.md) 
+- [Creating Agencies](creating-agencies.md)
+- [Communication Flows](communication-flows.md) 

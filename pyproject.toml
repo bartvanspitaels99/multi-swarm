@@ -1,23 +1,21 @@
 [build-system]
-requires = ["setuptools>=61.0.0", "wheel"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "multi-swarm"
-version = "1.0.0"
+version = "1.0.1"
 description = "A framework for creating collaborative AI agent swarms"
+authors = [{name = "Bart Van Spitaels", email = "bart.vanspitaels@gmail.com"}]
 readme = "README.md"
-authors = [
-    { name = "Bart Van Spitaels", email = "bart.vanspitaels@gmail.com" }  
-]
-license = { file = "LICENSE" }
+license = {file = "LICENSE"}
+requires-python = ">=3.9"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -25,13 +23,18 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-keywords = ["ai", "agents", "llm", "claude", "gemini", "multi-agent"]
-requires-python = ">=3.8"
+keywords = ["ai", "agents", "llm", "claude", "gemini", "multi-agent", "rag", "docker"]
 dependencies = [
     "anthropic>=0.18.1",
     "google-generativeai>=0.3.2",
-    "python-dotenv>=1.0.0",
     "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "docker>=6.1.0",
+    "sentence-transformers>=2.2.0",
+    "faiss-cpu>=1.7.4",
+    "transformers>=4.38.0",
+    "torch>=2.0.0",
+    "numpy>=1.24.0"
 ]
 
 [project.optional-dependencies]
@@ -41,13 +44,38 @@ dev = [
     "pytest-cov>=6.0.0",
     "black>=24.0.0",
     "isort>=5.0.0",
-    "mypy>=1.8.0",
+    "mypy>=1.8.0"
+]
+gpu = [
+    "faiss-gpu>=1.7.4",
+    "torch>=2.0.0"
 ]
 
 [project.urls]
-Homepage = "https://github.com/bartvanspitaels99/multi-swarm/"  # Please update this
-Documentation = "https://github.com/bartvanspitaels99/multi-swarm#readme"  # Please update this
-Repository = "https://github.com/bartvanspitaels99/multi-swarm.git"  # Please update this
+Documentation = "https://github.com/bartvanspitaels99/multi-swarm/docs"
+Source = "https://github.com/bartvanspitaels99/multi-swarm/"
+Issues = "https://github.com/bartvanspitaels99/multi-swarm/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"multi_swarm" = [
+    "docs/*.md",
+    "docs/api/*.md",
+    "docs/examples/*.md",
+    "docs/getting-started/*.md",
+    "docs/providers/*.md",
+    "docs/user-guide/*.md",
+    "examples/**/*",
+    ".cursorrules",
+    "agency_manifesto.md",
+    "README.md",
+    "LICENSE",
+    ".env.example",
+    "mkdocs.yml",
+    "requirements.txt"
+]
 
 [tool.black]
 line-length = 100

@@ -1,276 +1,243 @@
 # Creating Tools
 
-Tools are the actions that agents can perform. This guide explains how to create custom tools in Multi-Swarm using Pydantic for type safety and validation.
+Tools are the specific actions that agents can perform. Each tool is defined using Pydantic for input validation and clear interfaces.
 
 ## Basic Tool Structure
-
-Every tool inherits from the `BaseTool` class:
 
 ```python
 from multi_swarm.tools import BaseTool
 from pydantic import Field
-from typing import List, Dict
+import os
+from dotenv import load_dotenv
 
-class CustomTool(BaseTool):
-    """
-    A clear description of what the tool does.
-    This docstring helps agents understand when to use the tool.
-    """
-    input_data: str = Field(..., description="Description of the input")
-    options: Dict = Field(default={}, description="Optional configuration")
+load_dotenv()  # Load environment variables
 
-    def run(self) -> str:
-        """Implement the tool's functionality."""
-        result = self._process_data(self.input_data, self.options)
-        return result
+class DataVisualizationTool(BaseTool):
+    """
+    Create data visualizations using various plotting libraries.
+    Supports multiple chart types and customization options.
+    """
+    data_path: str = Field(
+        ..., description="Path to the data file to visualize"
+    )
+    chart_type: str = Field(
+        ..., description="Type of chart to create (line, bar, scatter, etc.)"
+    )
+    title: str = Field(
+        default="", description="Title for the visualization"
+    )
+
+    def run(self):
+        """Execute the visualization logic."""
+        # Implementation using plotting libraries
+        return f"Created {self.chart_type} chart from {self.data_path}"
 ```
 
 ## Tool Components
 
-### 1. Class Definition
+1. **Class Definition**
+   - Inherit from `BaseTool`
+   - Clear docstring explaining purpose
+   - Input validation with Pydantic
+
+2. **Fields**
+   - Use Pydantic's `Field` for validation
+   - Clear descriptions for each field
+   - Appropriate default values
+
+3. **Run Method**
+   - Main execution logic
+   - Return results as string
+   - Handle errors appropriately
+
+## Best Practices
+
+### 1. Environment Variables
 
 ```python
-class DataAnalysisTool(BaseTool):
-    """Tool for analyzing numerical data and generating insights."""
-```
+from dotenv import load_dotenv
+import os
 
-- Inherit from `BaseTool`
-- Clear docstring explaining purpose
-- Descriptive class name
+load_dotenv()
 
-### 2. Input Fields
+API_KEY = os.getenv("API_KEY")
+BASE_URL = os.getenv("BASE_URL")
 
-```python
-class DataAnalysisTool(BaseTool):
-    data: List[float] = Field(
-        ...,  # Required field
-        description="List of numerical values to analyze",
-        min_items=1,
-        example=[1.0, 2.5, 3.7]
-    )
+class APITool(BaseTool):
+    endpoint: str = Field(..., description="API endpoint to call")
     
-    method: str = Field(
-        default="mean",  # Default value
-        description="Analysis method to use",
-        choices=["mean", "median", "mode"]
-    )
+    def run(self):
+        """Make API call using environment variables."""
+        # Use API_KEY and BASE_URL from environment
+        return "API response"
 ```
 
-- Use Pydantic's `Field` for validation
-- Clear descriptions
-- Default values when appropriate
-- Type hints for better IDE support
-
-### 3. Run Method
+### 2. Error Handling
 
 ```python
-def run(self) -> str:
-    """
-    Execute the tool's main functionality.
-    Returns a string describing the result.
-    """
-    try:
-        result = self._analyze_data()
-        return f"Analysis complete: {result}"
-    except Exception as e:
-        return f"Error during analysis: {str(e)}"
+from multi_swarm.exceptions import ToolError
+
+class RiskySQLTool(BaseTool):
+    query: str = Field(..., description="SQL query to execute")
+    
+    def run(self):
+        """Execute SQL query with error handling."""
+        try:
+            # Execute query
+            return "Query results"
+        except Exception as e:
+            raise ToolError(f"SQL execution failed: {str(e)}")
 ```
 
-- Clear return type
-- Error handling
-- Descriptive return messages
+### 3. Resource Management
+
+```python
+class FileProcessingTool(BaseTool):
+    file_path: str = Field(..., description="Path to file to process")
+    
+    def run(self):
+        """Process file with proper resource management."""
+        try:
+            with open(self.file_path, 'r') as f:
+                # Process file
+                return "Processing results"
+        finally:
+            # Cleanup if needed
+            pass
+```
 
 ## Advanced Features
 
 ### 1. Async Support
 
 ```python
-class AsyncTool(BaseTool):
-    async def run(self) -> str:
-        """Asynchronous tool execution."""
-        result = await self._async_operation()
-        return result
-```
-
-### 2. Complex Validation
-
-```python
-from pydantic import validator
-from datetime import datetime
-
-class DateProcessingTool(BaseTool):
-    date_str: str = Field(..., description="Date string to process")
-    format: str = Field(default="%Y-%m-%d")
-
-    @validator('date_str')
-    def validate_date(cls, v, values):
-        try:
-            datetime.strptime(v, values['format'])
-            return v
-        except ValueError:
-            raise ValueError(f"Invalid date format. Expected {values['format']}")
-```
-
-### 3. Dependent Fields
-
-```python
-class APITool(BaseTool):
+class AsyncAPITool(BaseTool):
     endpoint: str = Field(..., description="API endpoint")
-    method: str = Field(default="GET")
-    body: Dict = Field(default={})
-
-    @validator('body')
-    def validate_body(cls, v, values):
-        if values['method'] in ['POST', 'PUT'] and not v:
-            raise ValueError("Body required for POST/PUT requests")
-        return v
+    
+    async def run(self):
+        """Asynchronous API call."""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(self.endpoint) as response:
+                return await response.text()
 ```
 
-## Common Tool Types
+### 2. Progress Tracking
+
+```python
+class LongRunningTool(BaseTool):
+    steps: int = Field(..., description="Number of steps")
+    
+    def run(self):
+        """Execute with progress updates."""
+        for i in range(self.steps):
+            self.update_progress(i / self.steps)
+            # Do work
+        return "Task completed"
+```
+
+### 3. File Storage Integration
+
+```python
+class DataStorageTool(BaseTool):
+    data: str = Field(..., description="Data to store")
+    
+    def run(self):
+        """Store data with file system integration."""
+        storage = self.get_file_storage()
+        path = storage.save_file("data.txt", self.data)
+        return f"Data stored at {path}"
+```
+
+## Example Tools
 
 ### 1. API Integration
 
 ```python
-class APITool(BaseTool):
-    """Tool for making API calls."""
-    url: str = Field(..., description="API endpoint URL")
-    method: str = Field(default="GET")
-    headers: Dict = Field(default={})
-    body: Dict = Field(default={})
-
-    async def run(self) -> str:
-        async with aiohttp.ClientSession() as session:
-            async with session.request(
-                self.method,
-                self.url,
-                headers=self.headers,
-                json=self.body
-            ) as response:
-                result = await response.json()
-                return str(result)
+class OpenAITool(BaseTool):
+    """
+    Interact with OpenAI's API for specific tasks.
+    """
+    prompt: str = Field(..., description="Prompt for the API")
+    model: str = Field(default="gpt-4", description="Model to use")
+    
+    def run(self):
+        """Execute OpenAI API call."""
+        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        response = client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": self.prompt}]
+        )
+        return response.choices[0].message.content
 ```
 
-### 2. File Operations
+### 2. Data Processing
 
 ```python
-class FileProcessingTool(BaseTool):
-    """Tool for file operations."""
-    file_path: str = Field(..., description="Path to file")
-    operation: str = Field(
-        default="read",
-        choices=["read", "write", "append"]
-    )
-    content: str = Field(default="")
-
-    def run(self) -> str:
-        if self.operation == "read":
-            with open(self.file_path, 'r') as f:
-                return f.read()
-        elif self.operation == "write":
-            with open(self.file_path, 'w') as f:
-                f.write(self.content)
-            return f"Written {len(self.content)} bytes"
-```
-
-### 3. Data Processing
-
-```python
-class DataTransformTool(BaseTool):
-    """Tool for data transformation."""
-    data: List[Dict] = Field(..., description="Data to transform")
-    transform_type: str = Field(
-        default="filter",
-        choices=["filter", "map", "reduce"]
-    )
-    criteria: Dict = Field(default={})
-
-    def run(self) -> str:
-        if self.transform_type == "filter":
-            result = self._filter_data()
-        elif self.transform_type == "map":
-            result = self._map_data()
+class DataFrameTool(BaseTool):
+    """
+    Process data using pandas DataFrame operations.
+    """
+    csv_path: str = Field(..., description="Path to CSV file")
+    operation: str = Field(..., description="Operation to perform")
+    
+    def run(self):
+        """Execute DataFrame operation."""
+        import pandas as pd
+        df = pd.read_csv(self.csv_path)
+        
+        if self.operation == "summary":
+            return df.describe().to_string()
+        elif self.operation == "head":
+            return df.head().to_string()
         else:
-            result = self._reduce_data()
-        return str(result)
+            raise ToolError(f"Unknown operation: {self.operation}")
 ```
 
-## Best Practices
+### 3. File Operations
 
-1. **Input Validation**
-   ```python
-   class ValidatedTool(BaseTool):
-       value: int = Field(
-           ...,
-           ge=0,
-           le=100,
-           description="Value between 0 and 100"
-       )
-   ```
-
-2. **Error Handling**
-   ```python
-   class RobustTool(BaseTool):
-       def run(self) -> str:
-           try:
-               result = self._process()
-               return result
-           except ValueError as e:
-               return f"Validation error: {e}"
-           except Exception as e:
-               return f"Unexpected error: {e}"
-   ```
-
-3. **Documentation**
-   ```python
-   class WellDocumentedTool(BaseTool):
-       """
-       Detailed description of the tool's purpose.
-       
-       Args:
-           input_data: Description of input
-           options: Description of options
-       
-       Returns:
-           Description of return value
-       
-       Raises:
-           ValueError: When input is invalid
-       """
-   ```
-
-4. **Resource Management**
-   ```python
-   class ResourceTool(BaseTool):
-       async def run(self) -> str:
-           async with self._acquire_resource() as resource:
-               result = await self._process(resource)
-           return result
-   ```
+```python
+class FileAnalyzerTool(BaseTool):
+    """
+    Analyze file contents and structure.
+    """
+    file_path: str = Field(..., description="Path to file")
+    analysis_type: str = Field(..., description="Type of analysis")
+    
+    def run(self):
+        """Perform file analysis."""
+        if not os.path.exists(self.file_path):
+            raise ToolError(f"File not found: {self.file_path}")
+            
+        stats = os.stat(self.file_path)
+        return {
+            "size": stats.st_size,
+            "created": stats.st_ctime,
+            "modified": stats.st_mtime
+        }
+```
 
 ## Testing Tools
 
 ```python
-import pytest
-
-async def test_custom_tool():
-    # Test basic functionality
-    tool = CustomTool(input_data="test")
-    result = await tool.run()
-    assert result is not None
-
-    # Test validation
-    with pytest.raises(ValueError):
-        tool = CustomTool(input_data=None)
-
-    # Test edge cases
-    tool = CustomTool(input_data="", options={"strict": True})
-    result = await tool.run()
-    assert result == "Empty input handled"
+if __name__ == "__main__":
+    # Test visualization tool
+    viz_tool = DataVisualizationTool(
+        data_path="data.csv",
+        chart_type="line",
+        title="Test Chart"
+    )
+    print(viz_tool.run())
+    
+    # Test API tool
+    api_tool = OpenAITool(
+        prompt="Hello, world!",
+        model="gpt-4"
+    )
+    print(api_tool.run())
 ```
 
 ## Learn More
 
-- [Tool API Reference](../api/tools.md)
-- [Example Tools](../examples/dev-agency.md#tools)
-- [Advanced Validation](../user-guide/advanced-tools.md)
-- [Tool Best Practices](../user-guide/tool-best-practices.md) 
+- [Creating Agents](creating-agents.md)
+- [Communication Flows](communication-flows.md)
+- [API Reference](../api/tools.md) 

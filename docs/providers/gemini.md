@@ -1,197 +1,180 @@
 # Gemini Integration
 
-Multi-Swarm integrates Google's Gemini models, which excel at creative tasks, strategic planning, and natural communication.
+Multi-Swarm integrates Google's Gemini models, particularly suited for data processing, system operations, and real-time tasks.
 
-## Available Models
-
-1. **Gemini Pro**
-   - Versatile model for most tasks
-   - Best for: Strategic planning, creative writing
-   - Balanced performance and cost
-   
-2. **Gemini Pro Vision**
-   - Multimodal capabilities
-   - Best for: Image analysis, visual tasks
-   - Supports image inputs
-
-## Configuration
-
-### Basic Setup
+## Model Configuration
 
 ```python
-from multi_swarm import BaseAgent
+GEMINI_CONFIG = {
+    "model": "gemini-2.0-flash-exp",
+    "max_tokens": 4096,
+    "api_version": "2024-01"
+}
+```
 
-class StrategicAgent(BaseAgent):
+## Task Preferences
+
+Gemini is automatically selected for the following task types:
+- Data processing and analysis
+- API integration tasks
+- System operations
+- Monitoring and alerting
+- Real-time interactions
+- Pattern recognition
+
+## Usage
+
+### Basic Implementation
+
+```python
+from multi_swarm import Agent
+
+class DataProcessor(Agent):
     def __init__(self):
         super().__init__(
-            name="Strategic Planner",
-            description="Expert in project planning and coordination",
-            instructions="planner_instructions.md",
+            name="Data Processor",
+            description="Data processing and system operations specialist",
+            instructions="processor_instructions.md",
             tools_folder="./tools",
-            model="gemini-2.0-pro",  # Specify Gemini model
-            temperature=0.7  # Higher temperature for creative tasks
+            # Framework will automatically select Gemini based on description
+            temperature=0.5,
+            use_rag=True  # Enable knowledge base
         )
 ```
 
-### Advanced Configuration
+### Manual Configuration
 
 ```python
-class VisionAgent(BaseAgent):
+class CustomAgent(Agent):
     def __init__(self):
         super().__init__(
-            name="Vision Analyst",
-            model="gemini-2.0-pro-vision",
+            name="Custom Agent",
+            description="Specialized data tasks",
+            instructions="instructions.md",
+            tools_folder="./tools",
+            llm_provider="gemini",  # Manually specify Gemini
             provider_config={
+                "model": "gemini-2.0-flash-exp",
+                "max_tokens": 4096,
                 "api_version": "2024-01",
-                "max_tokens": 2048,
-                "top_p": 0.95,
-                "top_k": 40,
-                "safety_settings": {
-                    "harassment": "block_none",
-                    "hate_speech": "block_medium",
-                    "sexually_explicit": "block_high",
-                    "dangerous_content": "block_medium"
-                }
+                "temperature": 0.5
             }
         )
 ```
 
 ## Best Practices
 
-1. **Model Selection**
-   - Use Pro for general tasks and planning
-   - Use Pro Vision for image-related tasks
-   - Consider cost-performance trade-offs
+1. **Task Description**
+   - Include relevant keywords in agent description
+   - Let framework handle model selection
+   - Focus on data and system operations
 
 2. **Temperature Settings**
-   - 0.7: Creative and strategic tasks
-   - 0.5: Balanced tasks
-   - 0.9: Highly creative tasks
+   - 0.3-0.5: Data analysis, system tasks
+   - 0.5-0.7: General operations
+   - 0.7-0.9: Creative data presentation
 
-3. **Content Safety**
-   - Configure safety settings appropriately
-   - Handle blocked content gracefully
-   - Monitor safety filter triggers
+3. **Resource Management**
+   - Enable RAG for data-intensive tasks
+   - Use file storage for data handling
+   - Implement proper error handling
 
-4. **Error Handling**
+4. **Performance Tuning**
+   - Optimize prompt length
+   - Use appropriate batch sizes
+   - Monitor response times
+
+## Error Handling
 
 ```python
+from multi_swarm.exceptions import ProviderError
+
 try:
-    response = await agent.process_message(prompt)
-except GoogleGenerativeAIError as e:
+    response = await agent.process_message(message)
+except ProviderError as e:
     if "rate_limit" in str(e):
         # Handle rate limiting
         await asyncio.sleep(30)
-        response = await agent.process_message(prompt)
+        response = await agent.process_message(message)
+    elif "quota_exceeded" in str(e):
+        # Handle quota issues
+        await handle_quota_exceeded()
+        response = await agent.process_message(message)
     else:
-        # Handle other API errors
+        # Handle other provider errors
         raise
 ```
 
-## Common Use Cases
+## Environment Setup
 
-1. **Strategic Planning**
-   ```python
-   # Gemini excels at high-level planning
-   response = await agent.process_message("""
-   Create a project plan for developing a mobile app:
-   1. Define key features
-   2. Estimate timeline
-   3. Identify potential risks
-   """)
-   ```
+1. Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 
-2. **Image Analysis**
-   ```python
-   # Using Gemini Pro Vision for image tasks
-   response = await vision_agent.process_message(
-       text="Analyze this UI design and suggest improvements",
-       images=["design.png"]
-   )
-   ```
+2. Set the environment variable:
+```bash
+export GOOGLE_API_KEY=your_api_key
+```
 
-3. **Creative Writing**
-   ```python
-   # Gemini is great for creative content
-   response = await agent.process_message("""
-   Write a compelling product description for:
-   - Smart home security system
-   - Focus on benefits and features
-   - Include call to action
-   """)
-   ```
+3. Or add to your `.env` file:
+```env
+GOOGLE_API_KEY=your_api_key
+```
 
 ## Performance Optimization
 
-1. **Token Management**
-   - Monitor token usage
-   - Use concise prompts
-   - Implement response caching
-
-2. **Cost Tracking**
-   ```python
-   # Track API usage
-   class UsageTracker(BaseAgent):
-       async def process_message(self, message):
-           response = await super().process_message(message)
-           self.log_api_usage(response.usage)
-           return response
-   ```
-
-3. **Streaming Support**
-   ```python
-   async for chunk in agent.stream_message(prompt):
-       print(chunk, end="", flush=True)
-   ```
-
-## Multimodal Features
-
-1. **Image Input**
-   ```python
-   # Process images with text
-   response = await vision_agent.process_message(
-       text="What's in this image?",
-       images=["image.jpg"],
-       image_descriptions=["A product photo"]
-   )
-   ```
-
-2. **Image Analysis**
-   ```python
-   # Detailed image analysis
-   response = await vision_agent.process_message(
-       text="Analyze this chart and extract key trends",
-       images=["chart.png"]
-   )
-   ```
-
-## Troubleshooting
-
-1. **Rate Limits**
-   - Implement backoff strategies
-   - Queue requests when needed
+1. **Request Management**
+   - Use appropriate batch sizes
+   - Implement request queuing
    - Monitor API quotas
 
-2. **Safety Filters**
-   - Handle blocked content
-   - Adjust safety settings
-   - Log filter triggers
+2. **Response Handling**
+   - Process responses asynchronously
+   - Implement proper error handling
+   - Use streaming for long responses
 
-3. **API Errors**
+3. **Resource Usage**
    ```python
-   from multi_swarm.exceptions import GoogleGenerativeAIError
-   
-   try:
-       response = await agent.process_message(prompt)
-   except GoogleGenerativeAIError as e:
-       if "safety" in str(e):
-           # Handle safety filter trigger
-           modified_prompt = adjust_prompt_safety(prompt)
-           response = await agent.process_message(modified_prompt)
+   # Enable streaming for long responses
+   async for chunk in agent.stream_message(message):
+       process_chunk(chunk)
+   ```
+
+## Monitoring
+
+The framework provides built-in monitoring for:
+- Request success/failure rates
+- Response latency
+- Token usage
+- Cost per request
+- Rate limit status
+
+Access metrics:
+```python
+metrics = agent.get_provider_metrics()
+print(f"Total requests: {metrics['total_requests']}")
+print(f"Average latency: {metrics['avg_latency']}ms")
+```
+
+## Data Processing Features
+
+1. **Batch Processing**
+   ```python
+   # Process data in batches
+   async def process_data_batch(data_batch):
+       tasks = [agent.process_message(item) for item in data_batch]
+       return await asyncio.gather(*tasks)
+   ```
+
+2. **Real-time Processing**
+   ```python
+   # Handle real-time data
+   async def process_stream(data_stream):
+       async for data in data_stream:
+           result = await agent.process_message(data)
+           await handle_result(result)
    ```
 
 ## Learn More
 
-- [Gemini API Documentation](https://ai.google.dev/docs)
+- [Gemini Documentation](https://ai.google.dev/docs)
 - [Multi-Swarm Examples](../examples/trends-agency.md)
-- [Safety Settings Guide](../user-guide/safety-settings.md) 
+- [Advanced Configuration](../user-guide/creating-agents.md) 

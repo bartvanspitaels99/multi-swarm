@@ -9,7 +9,7 @@ pip install multi_swarm
 ## Prerequisites
 
 1. **Python Version**
-   - Python 3.8 or higher is required
+   - Python 3.9 or higher is required
    - Virtual environment recommended
 
 2. **API Keys**
@@ -49,9 +49,16 @@ pip install multi_swarm
    GOOGLE_API_KEY=your_gemini_api_key
    ```
 
-4. **Verify Installation**
+4. **Cursor AI Setup** (recommended)
+   If you're using Cursor AI (recommended for development):
+   ```bash
+   cp .cursorrules /path/to/your/project/root/
+   ```
+   The `.cursorrules` file contains essential instructions for Cursor's Claude agent to better assist with Multi-Swarm development.
+
+5. **Verify Installation**
    ```python
-   from multi_swarm import Agency, BaseAgent
+   from multi_swarm import Agency, Agent
    print("Multi-Swarm installed successfully!")
    ```
 
@@ -60,15 +67,37 @@ pip install multi_swarm
 For enhanced functionality, you can install additional packages:
 
 ```bash
-# For monitoring and visualization
-pip install multi_swarm[monitoring]
-
 # For development and testing
 pip install multi_swarm[dev]
+
+# For monitoring and visualization
+pip install multi_swarm[monitoring]
 
 # For all optional dependencies
 pip install multi_swarm[all]
 ```
+
+## Default Model Configurations
+
+Multi-Swarm uses the latest models from Claude and Gemini:
+
+```python
+# Claude Configuration (default)
+CLAUDE_CONFIG = {
+    "model": "claude-3-5-sonnet-latest",
+    "max_tokens": 4096,
+    "api_version": "2024-03"
+}
+
+# Gemini Configuration
+GEMINI_CONFIG = {
+    "model": "gemini-2.0-flash-exp",
+    "max_tokens": 4096,
+    "api_version": "2024-01"
+}
+```
+
+The framework automatically selects the appropriate model based on the agent's role and task requirements.
 
 ## Troubleshooting
 
@@ -82,7 +111,7 @@ pip install multi_swarm[all]
 
 2. **Python Version Error**
    ```python
-   ImportError: This package requires Python 3.8+
+   ImportError: This package requires Python 3.9+
    ```
    Solution: Upgrade your Python installation or use a compatible version.
 
@@ -94,4 +123,4 @@ pip install multi_swarm[all]
    pip install multi_swarm
    ```
 
-For more help, check our [GitHub Issues](https://github.com/yourusername/multi_swarm/issues) or [Documentation](https://multi-swarm.readthedocs.io/). 
+For more help, check our [GitHub Issues](https://github.com/bartvanspitaels99/multi-swarm/issues) or [Documentation](https://multi-swarm.readthedocs.io/). 

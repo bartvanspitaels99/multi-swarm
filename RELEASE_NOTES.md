@@ -135,4 +135,30 @@ None at this time. This is a stable release ready for production use.
 
 ### 🙏 Acknowledgments
 
-Special thanks to all contributors who helped make this first major release possible. Your feedback, suggestions, and contributions have been invaluable in shaping Multi-Swarm into a robust framework for AI agent development. 
+Special thanks to all contributors who helped make this first major release possible. Your feedback, suggestions, and contributions have been invaluable in shaping Multi-Swarm into a robust framework for AI agent development.
+
+## v1.0.1 (2024-03-XX)
+
+### Updates
+- Updated Claude model to `claude-3-5-sonnet-latest` with API version 2024-03
+- Updated Gemini model to `gemini-2.0-flash-exp` with API version 2024-01
+- Improved automatic model selection based on agent roles
+- Added Cursor AI integration instructions
+
+### Fixed
+- Fixed model configuration in base agent class
+- Fixed agency initialization issues
+- Improved error handling for model selection
+
+## v1.0.0 (2024-03-XX)
+
+### Features
+- Initial release of Multi-Swarm Framework
+- Support for multiple LLM providers (Claude and Gemini)
+- Agent template creation system
+- Flexible agency configuration
+- Built-in tools system
+- Asynchronous communication between agents
+- File management and storage
+- Code execution environment
+- Knowledge base integration 

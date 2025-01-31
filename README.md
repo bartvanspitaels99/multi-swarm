@@ -6,55 +6,68 @@
 [![Python Versions](https://img.shields.io/pypi/pyversions/multi-swarm.svg)](https://pypi.org/project/multi-swarm/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A powerful framework for creating collaborative AI agent swarms, leveraging multiple LLM providers including Claude and Gemini.
+A powerful framework for creating collaborative AI agent swarms, enabling complex task completion through coordinated agent interactions.
 
 ## Features
 
-- Create collaborative agent swarms with distinct roles and capabilities
+- Create specialized AI agents with distinct roles and capabilities
+- Configure communication flows between agents
+- Manage shared resources and knowledge
 - Support for multiple LLM providers (Claude and Gemini)
-- Easy-to-use agent template creation
-- Flexible agency configuration
-- Built-in tools system
-- Asynchronous communication between agents
+- Built-in security and resource management
 
 ## Installation
 
+Basic installation:
 ```bash
 pip install multi-swarm
 ```
 
 For development installation with testing tools:
-
 ```bash
 pip install multi-swarm[dev]
 ```
 
-## Quick Start
+## Environment Setup
 
 1. Set up your environment variables:
-
 ```bash
 # .env
 ANTHROPIC_API_KEY=your_claude_api_key
 GOOGLE_API_KEY=your_gemini_api_key
 ```
 
-2. Create a simple agency:
+2. If using Cursor AI (recommended):
+   - Copy the `.cursorrules` file to your project's root directory
+   - This file contains essential instructions for Cursor's Claude agent to better assist with Multi-Swarm development
+   - The `.cursorrules` file helps maintain consistent agent behavior and framework best practices
 
+## Quick Start
+
+1. Create a custom agent:
 ```python
-from multi_swarm import Agency, BaseAgent
+from multi_swarm import Agent
 
-# Create custom agents
-class MyAgent(BaseAgent):
+class MyAgent(Agent):
     def __init__(self):
         super().__init__(
             name="MyAgent",
             description="A custom agent for specific tasks",
             instructions="path/to/instructions.md",
             tools_folder="path/to/tools",
-            model="claude-3-sonnet",
+            llm_provider="claude",  # or "gemini" - framework automatically selects best model
+            provider_config={
+                "model": "claude-3-5-sonnet-latest",  # Latest Claude model
+                "max_tokens": 4096,
+                "api_version": "2024-03"
+            },
             temperature=0.7
         )
+```
+
+2. Create and run your agency:
+```python
+from multi_swarm import Agency
 
 # Initialize agents
 agent1 = MyAgent()
@@ -73,30 +86,46 @@ agency = Agency(
 agency.run_demo()
 ```
 
+## LLM Provider Configuration
+
+The framework automatically selects the most appropriate LLM model based on the agent's role:
+
+### Claude Models (Anthropic)
+- Default model: `claude-3-5-sonnet-latest`
+- API version: `2024-03`
+- Used for: Complex reasoning, code generation, and detailed analysis
+- Best for agents handling: Research, documentation, code review, planning
+
+### Gemini Models (Google)
+- Default model: `gemini-2.0-flash-exp`
+- API version: `2024-01`
+- Used for: Quick responses, data processing, and technical tasks
+- Best for agents handling: Data analysis, API integration, system operations
+
+The framework intelligently switches between providers based on:
+- Task complexity
+- Required capabilities
+- Response time needs
+- Cost considerations
+
 ## Examples
 
-Check out our example implementations in the [examples](examples/) directory:
-
-1. [Google Trends Analysis Agency](examples/trends_analysis_agency/): Shows how to create a specialized agency for analyzing Google Trends data. This example demonstrates:
-   - Custom agent creation (CEO and TrendsAnalyst)
-   - Communication flow setup
-   - Agent instructions and tools structure
-   - Basic agency configuration
+Check out the `examples` directory for complete implementations:
+- Research Assistant Agency
+- Development Agency
+- Trends Analysis Agency
 
 ## Documentation
 
-For detailed documentation, please visit our [GitHub repository](https://github.com/bartvanspitaels99/multi-swarm).
+Full documentation is available at [docs/](docs/).
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. Here are some ways you can contribute:
-
-- Add new agent types
-- Implement useful tools
-- Improve documentation
-- Add tests
-- Report bugs
-- Suggest features
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 

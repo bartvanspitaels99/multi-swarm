@@ -1,175 +1,161 @@
 # Claude Integration
 
-Multi-Swarm provides seamless integration with Anthropic's Claude models, particularly suited for technical tasks, code generation, and complex analysis.
+Multi-Swarm provides seamless integration with Anthropic's Claude models, particularly suited for complex reasoning, code generation, and technical analysis.
 
-## Available Models
-
-1. **Claude 3 Opus**
-   - Most capable model
-   - Best for: Complex reasoning, technical analysis
-   - Higher cost, slower response time
-   
-2. **Claude 3 Sonnet**
-   - Balanced performance and cost
-   - Best for: Most technical tasks
-   - Default choice for technical agents
-   
-3. **Claude 3 Haiku**
-   - Fastest model
-   - Best for: Simple tasks, rapid prototyping
-   - Lower cost, quicker response time
-
-## Configuration
-
-### Basic Setup
+## Model Configuration
 
 ```python
-from multi_swarm import BaseAgent
+CLAUDE_CONFIG = {
+    "model": "claude-3-5-sonnet-latest",
+    "max_tokens": 4096,
+    "api_version": "2024-03"
+}
+```
 
-class TechnicalAgent(BaseAgent):
+## Task Preferences
+
+Claude is automatically selected for the following task types:
+- Code generation and review
+- Research and analysis
+- Strategic planning
+- Technical documentation
+- Complex reasoning
+- Multi-step problem solving
+
+## Usage
+
+### Basic Implementation
+
+```python
+from multi_swarm import Agent
+
+class TechnicalAgent(Agent):
     def __init__(self):
         super().__init__(
             name="Technical Expert",
-            description="Specialized in technical analysis and implementation",
+            description="Code generation and technical analysis specialist",
             instructions="technical_instructions.md",
             tools_folder="./tools",
-            model="claude-3.5-sonnet",  # Specify Claude model
-            temperature=0.5  # Lower temperature for technical tasks
+            # Framework will automatically select Claude based on description
+            temperature=0.5,  # Lower temperature for technical tasks
+            use_code_interpreter=True  # Enable code execution
         )
 ```
 
-### Advanced Configuration
+### Manual Configuration
 
 ```python
-class AdvancedAgent(BaseAgent):
+class CustomAgent(Agent):
     def __init__(self):
         super().__init__(
-            name="Advanced Analyst",
-            model="claude-3.5-opus",
+            name="Custom Agent",
+            description="Specialized technical tasks",
+            instructions="instructions.md",
+            tools_folder="./tools",
+            llm_provider="claude",  # Manually specify Claude
             provider_config={
-                "api_version": "2024-03",
+                "model": "claude-3-5-sonnet-latest",
                 "max_tokens": 4096,
-                "top_p": 0.9,
-                "top_k": 50
+                "api_version": "2024-03",
+                "temperature": 0.5
             }
         )
 ```
 
 ## Best Practices
 
-1. **Model Selection**
-   - Use Opus for complex reasoning tasks
-   - Use Sonnet for general technical work
-   - Use Haiku for quick, simple tasks
+1. **Task Description**
+   - Include relevant keywords in agent description
+   - Let framework handle model selection
+   - Be specific about technical requirements
 
 2. **Temperature Settings**
-   - 0.5: Technical tasks, code generation
-   - 0.7: Creative technical writing
-   - 0.3: Highly precise tasks
+   - 0.3-0.5: Code generation, technical analysis
+   - 0.5-0.7: Technical writing, documentation
+   - 0.7-0.9: Creative technical tasks
 
 3. **Context Management**
-   - Claude excels with detailed context
    - Provide clear, structured instructions
-   - Include relevant code snippets
+   - Include relevant technical context
+   - Use code blocks for examples
 
-4. **Error Handling**
+4. **Resource Management**
+   - Enable code interpreter for technical tasks
+   - Use RAG for knowledge-intensive tasks
+   - Implement proper error handling
+
+## Error Handling
 
 ```python
+from multi_swarm.exceptions import ProviderError
+
 try:
-    response = await agent.process_message(prompt)
-except AnthropicError as e:
+    response = await agent.process_message(message)
+except ProviderError as e:
     if "rate_limit" in str(e):
         # Handle rate limiting
         await asyncio.sleep(60)
-        response = await agent.process_message(prompt)
+        response = await agent.process_message(message)
+    elif "context_length" in str(e):
+        # Handle context length error
+        shortened = summarize_message(message)
+        response = await agent.process_message(shortened)
     else:
-        # Handle other API errors
+        # Handle other provider errors
         raise
 ```
 
-## Common Use Cases
+## Environment Setup
 
-1. **Code Generation**
-   ```python
-   # Claude excels at generating code
-   response = await agent.process_message("""
-   Create a Python function that:
-   1. Takes a list of numbers
-   2. Filters out negative values
-   3. Returns the sum of squares
-   """)
-   ```
+1. Get your API key from [Anthropic's Console](https://console.anthropic.com/)
 
-2. **Technical Analysis**
-   ```python
-   # Claude can analyze complex technical content
-   response = await agent.process_message("""
-   Analyze this log file for security vulnerabilities:
-   [log content...]
-   """)
-   ```
+2. Set the environment variable:
+```bash
+export ANTHROPIC_API_KEY=your_api_key
+```
 
-3. **API Design**
-   ```python
-   # Claude can help design robust APIs
-   response = await agent.process_message("""
-   Design a RESTful API for a user management system with:
-   - Authentication
-   - Role-based access
-   - User profiles
-   """)
-   ```
+3. Or add to your `.env` file:
+```env
+ANTHROPIC_API_KEY=your_api_key
+```
 
 ## Performance Optimization
 
-1. **Token Usage**
-   - Monitor token consumption
-   - Use shorter prompts when possible
-   - Implement caching for common queries
+1. **Token Management**
+   - Use concise, focused prompts
+   - Implement response caching
+   - Monitor token usage
 
-2. **Cost Management**
+2. **Cost Optimization**
+   - Use appropriate temperature settings
+   - Enable streaming for long responses
+   - Implement request batching
+
+3. **Response Handling**
    ```python
-   # Track token usage
-   class TokenTracker(BaseAgent):
-       async def process_message(self, message):
-           response = await super().process_message(message)
-           self.log_token_usage(response.usage)
-           return response
+   # Enable streaming for long responses
+   async for chunk in agent.stream_message(message):
+       process_chunk(chunk)
    ```
 
-3. **Response Streaming**
-   ```python
-   async for chunk in agent.stream_message(prompt):
-       print(chunk, end="", flush=True)
-   ```
+## Monitoring
 
-## Troubleshooting
+The framework provides built-in monitoring for:
+- Request success/failure rates
+- Response latency
+- Token usage
+- Cost per request
+- Rate limit status
 
-1. **Rate Limiting**
-   - Implement exponential backoff
-   - Use request queuing
-   - Monitor API usage
-
-2. **Context Length**
-   - Break long prompts into chunks
-   - Summarize lengthy content
-   - Use streaming for large responses
-
-3. **API Errors**
-   ```python
-   from multi_swarm.exceptions import AnthropicError
-   
-   try:
-       response = await agent.process_message(prompt)
-   except AnthropicError as e:
-       if "context_length" in str(e):
-           # Handle context length error
-           shortened_prompt = summarize_prompt(prompt)
-           response = await agent.process_message(shortened_prompt)
-   ```
+Access metrics:
+```python
+metrics = agent.get_provider_metrics()
+print(f"Total tokens used: {metrics['total_tokens']}")
+print(f"Average latency: {metrics['avg_latency']}ms")
+```
 
 ## Learn More
 
-- [Claude API Documentation](https://docs.anthropic.com/claude/docs)
+- [Anthropic Documentation](https://docs.anthropic.com/claude/docs)
 - [Multi-Swarm Examples](../examples/dev-agency.md)
 - [Advanced Configuration](../user-guide/creating-agents.md) 

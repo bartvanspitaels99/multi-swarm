@@ -1,354 +1,299 @@
 # Communication Flows
 
-Communication flows define how agents interact within an agency. This guide explains how to design and implement effective communication patterns in Multi-Swarm.
+Multi-Swarm uses a thread-based communication system that enables structured conversations between agents. Each communication flow is directional and managed through conversation threads.
 
-## Basic Concepts
-
-### 1. Directional Communication
-
-Communication in Multi-Swarm is directional:
+## Basic Communication
 
 ```python
+from multi_swarm import Agency, Agent
+
+# Create agents
+dev = DevAgent()
+analyst = DataAnalyst()
+researcher = ResearchAgent()
+
+# Define communication flows
 agency = Agency([
-    manager,  # Entry point
-    [manager, worker],  # manager -> worker
-    [worker, helper],   # worker -> helper
+    dev,  # Entry point for user communication
+    [dev, analyst],  # Dev can communicate with Analyst
+    [dev, researcher],  # Dev can communicate with Researcher
+    [analyst, researcher]  # Analyst can communicate with Researcher
 ])
 ```
 
-- Left agent can initiate communication with right agent
-- Communication is one-way unless explicitly bidirectional
-- Entry point agent handles external communication
+## Thread Management
 
-### 2. Message Types
+Each conversation is managed through a thread:
 
 ```python
-# Direct message
-response = await agency.process_message(
-    "Analyze this data",
-    from_agent="manager",
-    to_agent="analyst"
+# Start a new thread
+thread = await agency.create_thread("Project Analysis")
+
+# Send message in thread
+response = await agency.send_message(
+    thread_id=thread.id,
+    content="Analyze project requirements",
+    from_agent=dev,
+    to_agent=analyst
 )
 
-# Broadcast message
-response = await agency.broadcast_message(
-    "System update required",
-    from_agent="admin"
+# Continue conversation
+follow_up = await agency.send_message(
+    thread_id=thread.id,
+    content="Provide more details about X",
+    from_agent=analyst,
+    to_agent=dev
 )
+```
 
-# Chain message
-response = await agency.chain_message(
-    "Process this document",
-    chain=["intake", "processor", "reviewer"]
-)
+## Message Structure
+
+Messages contain metadata and content:
+
+```python
+class Message:
+    thread_id: str  # Unique thread identifier
+    content: str    # Message content
+    metadata: dict  # Additional information
+    from_agent: str # Sender agent name
+    to_agent: str   # Recipient agent name
+    timestamp: float # Message timestamp
 ```
 
 ## Communication Patterns
 
-### 1. Hierarchical (Tree)
+### 1. Hierarchical
 
 ```python
-def create_hierarchical_agency():
-    """
-    CEO
-    ├── Manager1
-    │   ├── Worker1
-    │   └── Worker2
-    └── Manager2
-        ├── Worker3
-        └── Worker4
-    """
-    agency = Agency([
-        ceo,
-        [ceo, manager1],
-        [ceo, manager2],
-        [manager1, worker1],
-        [manager1, worker2],
-        [manager2, worker3],
-        [manager2, worker4],
-    ])
-    return agency
+# Manager delegates to team
+lead = DevAgent(name="Tech Lead")
+dev1 = DevAgent(name="Developer 1")
+dev2 = DevAgent(name="Developer 2")
+
+agency = Agency([
+    lead,  # Entry point
+    [lead, dev1],  # Lead delegates to dev1
+    [lead, dev2],  # Lead delegates to dev2
+])
 ```
 
-### 2. Pipeline (Chain)
+### 2. Pipeline
 
 ```python
-def create_pipeline_agency():
-    """
-    Intake -> Processor -> Validator -> Publisher
-    """
-    agency = Agency([
-        intake,
-        [intake, processor],
-        [processor, validator],
-        [validator, publisher],
-    ])
-    return agency
+# Sequential processing
+collector = DataAgent(name="Data Collector")
+processor = DataAgent(name="Data Processor")
+analyzer = DataAnalyst(name="Data Analyzer")
+
+agency = Agency([
+    collector,  # Entry point
+    [collector, processor],  # Collect -> Process
+    [processor, analyzer],   # Process -> Analyze
+])
 ```
 
-### 3. Hub and Spoke
+### 3. Mesh
 
 ```python
-def create_hub_agency():
-    """
-    Coordinator (Hub)
-    ├── Specialist1
-    ├── Specialist2
-    ├── Specialist3
-    └── Specialist4
-    """
-    agency = Agency([
-        coordinator,
-        [coordinator, specialist1],
-        [coordinator, specialist2],
-        [coordinator, specialist3],
-        [coordinator, specialist4],
-    ])
-    return agency
-```
+# Full team collaboration
+team_lead = DevAgent(name="Team Lead")
+frontend = DevAgent(name="Frontend Dev")
+backend = DevAgent(name="Backend Dev")
+designer = DevAgent(name="Designer")
 
-### 4. Mesh Network
-
-```python
-def create_mesh_agency():
-    """
-    Fully connected network of peers
-    """
-    agency = Agency([
-        coordinator,
-        [peer1, peer2],
-        [peer2, peer1],
-        [peer2, peer3],
-        [peer3, peer1],
-        [peer3, peer2],
-    ])
-    return agency
-```
-
-## Message Handling
-
-### 1. Basic Message Processing
-
-```python
-class CustomAgent(BaseAgent):
-    async def process_message(self, message: str) -> str:
-        # Preprocess
-        context = self._build_context(message)
-        
-        # Generate response
-        response = await self._generate_response(context)
-        
-        # Postprocess
-        return self._format_response(response)
-```
-
-### 2. Message Routing
-
-```python
-class CustomAgency(Agency):
-    async def route_message(
-        self,
-        message: str,
-        from_agent: str,
-        to_agent: str
-    ) -> str:
-        # Validate route
-        if not self._is_valid_route(from_agent, to_agent):
-            raise ValueError("Invalid route")
-        
-        # Process message
-        return await self._process_route(message, from_agent, to_agent)
-```
-
-### 3. Message Broadcasting
-
-```python
-class BroadcastAgency(Agency):
-    async def broadcast(self, message: str, from_agent: str) -> List[str]:
-        responses = []
-        for agent in self.agents:
-            if agent.name != from_agent:
-                response = await self.route_message(
-                    message,
-                    from_agent,
-                    agent.name
-                )
-                responses.append(response)
-        return responses
+agency = Agency([
+    team_lead,  # Entry point
+    [team_lead, frontend],
+    [team_lead, backend],
+    [team_lead, designer],
+    [frontend, backend],
+    [frontend, designer],
+    [backend, designer]
+])
 ```
 
 ## Advanced Features
 
-### 1. Context Sharing
+### 1. Message Broadcasting
 
 ```python
-class ContextAwareAgency(Agency):
-    def __init__(self):
-        super().__init__()
-        self.shared_context = {}
-    
-    async def process_with_context(
-        self,
-        message: str,
-        context: Dict
-    ) -> str:
-        self.shared_context.update(context)
-        response = await self.process_message(message)
-        return response
+# Send message to multiple agents
+await agency.broadcast_message(
+    thread_id=thread.id,
+    content="Team update: New requirements",
+    from_agent=team_lead,
+    to_agents=[frontend, backend, designer]
+)
 ```
 
-### 2. Priority Routing
+### 2. Thread Management
 
 ```python
-class PriorityAgency(Agency):
-    async def route_message(
-        self,
-        message: str,
-        from_agent: str,
-        to_agent: str,
-        priority: int = 0
-    ) -> str:
-        if priority > 0:
-            return await self._handle_priority_message(
-                message,
-                from_agent,
-                to_agent,
-                priority
-            )
-        return await super().route_message(message, from_agent, to_agent)
+# Thread operations
+threads = await agency.list_threads()
+thread = await agency.get_thread(thread_id)
+messages = await agency.get_thread_messages(thread_id)
+await agency.archive_thread(thread_id)
 ```
 
 ### 3. Message Filtering
 
 ```python
-class FilteredAgency(Agency):
-    def __init__(self):
-        super().__init__()
-        self.filters = []
-    
-    async def process_message(self, message: str) -> str:
-        for filter_fn in self.filters:
-            message = filter_fn(message)
-        return await super().process_message(message)
+# Get filtered messages
+messages = await agency.get_messages(
+    thread_id=thread.id,
+    filter={
+        "from_agent": "dev_lead",
+        "type": "code_review",
+        "priority": "high"
+    }
+)
 ```
 
 ## Best Practices
 
-1. **Clear Communication Paths**
-   - Define explicit routes
-   - Avoid circular dependencies
-   - Document flow patterns
+1. **Thread Management**
+   - Create meaningful thread names
+   - Archive completed threads
+   - Monitor thread lifecycle
+   - Clean up old threads
 
-2. **Error Handling**
-   ```python
-   try:
-       response = await agency.process_message(message)
-   except CommunicationError as e:
-       # Handle communication errors
-       await agency.handle_error(e)
-   except AgentError as e:
-       # Handle agent-specific errors
-       await agency.retry_with_backup(message)
-   ```
+2. **Message Structure**
+   - Clear, focused messages
+   - Appropriate metadata
+   - Proper error handling
+   - Message validation
 
-3. **Message Validation**
-   ```python
-   class ValidatedAgency(Agency):
-       def validate_message(self, message: str) -> bool:
-           if not message:
-               return False
-           if len(message) > self.max_length:
-               return False
-           return True
-   ```
+3. **Flow Design**
+   - Efficient routing
+   - Clear responsibilities
+   - Proper error handling
+   - Resource management
 
-4. **Performance Optimization**
-   ```python
-   class OptimizedAgency(Agency):
-       def __init__(self):
-           super().__init__()
-           self.message_cache = {}
-       
-       async def process_message(self, message: str) -> str:
-           cache_key = self._compute_cache_key(message)
-           if cache_key in self.message_cache:
-               return self.message_cache[cache_key]
-           
-           response = await super().process_message(message)
-           self.message_cache[cache_key] = response
-           return response
-   ```
-
-## Common Patterns
-
-### 1. Request-Response
+## Error Handling
 
 ```python
-async def request_response(agency, request: str) -> str:
-    """Basic request-response pattern."""
-    return await agency.process_message(request)
+from multi_swarm.exceptions import CommunicationError
+
+try:
+    response = await agency.send_message(
+        thread_id=thread.id,
+        content="Process this data",
+        from_agent=collector,
+        to_agent=processor
+    )
+except CommunicationError as e:
+    if "routing_error" in str(e):
+        # Handle routing error
+        await handle_routing_error(e)
+    elif "thread_error" in str(e):
+        # Handle thread error
+        await handle_thread_error(e)
+    else:
+        # Handle other communication errors
+        raise
 ```
 
-### 2. Chain of Responsibility
+## Example Workflows
+
+### 1. Code Review Process
 
 ```python
-async def process_chain(agency, message: str, chain: List[str]) -> str:
-    """Process message through a chain of agents."""
-    result = message
-    for agent in chain:
-        result = await agency.process_message(
-            result,
-            to_agent=agent
-        )
-    return result
+# Create code review thread
+review_thread = await agency.create_thread("Code Review")
+
+# Developer submits code
+await agency.send_message(
+    thread_id=review_thread.id,
+    content="Please review this PR",
+    from_agent=developer,
+    to_agent=reviewer
+)
+
+# Reviewer provides feedback
+await agency.send_message(
+    thread_id=review_thread.id,
+    content="Found issues in module X",
+    from_agent=reviewer,
+    to_agent=developer
+)
+
+# Developer addresses feedback
+await agency.send_message(
+    thread_id=review_thread.id,
+    content="Fixed issues in module X",
+    from_agent=developer,
+    to_agent=reviewer
+)
 ```
 
-### 3. Publish-Subscribe
+### 2. Data Analysis Pipeline
 
 ```python
-class PubSubAgency(Agency):
-    def __init__(self):
-        super().__init__()
-        self.subscribers = defaultdict(list)
-    
-    async def publish(self, topic: str, message: str):
-        """Publish message to topic subscribers."""
-        for subscriber in self.subscribers[topic]:
-            await self.route_message(message, "publisher", subscriber)
+# Create analysis thread
+analysis_thread = await agency.create_thread("Data Analysis")
+
+# Collect data
+await agency.send_message(
+    thread_id=analysis_thread.id,
+    content="Collect sales data",
+    from_agent=manager,
+    to_agent=collector
+)
+
+# Process data
+await agency.send_message(
+    thread_id=analysis_thread.id,
+    content="Clean and transform data",
+    from_agent=collector,
+    to_agent=processor
+)
+
+# Analyze results
+await agency.send_message(
+    thread_id=analysis_thread.id,
+    content="Generate insights",
+    from_agent=processor,
+    to_agent=analyst
+)
 ```
 
-## Testing Communication
+### 3. Research Collaboration
 
 ```python
-async def test_communication():
-    agency = create_test_agency()
-    
-    # Test direct communication
-    response = await agency.process_message(
-        "Test message",
-        from_agent="sender",
-        to_agent="receiver"
+# Create research thread
+research_thread = await agency.create_thread("Market Research")
+
+# Assign research tasks
+await agency.broadcast_message(
+    thread_id=research_thread.id,
+    content="Research assigned areas",
+    from_agent=lead_researcher,
+    to_agents=[researcher1, researcher2]
+)
+
+# Collect findings
+findings = []
+for researcher in [researcher1, researcher2]:
+    response = await agency.send_message(
+        thread_id=research_thread.id,
+        content="Submit research findings",
+        from_agent=researcher,
+        to_agent=lead_researcher
     )
-    assert response is not None
-    
-    # Test broadcast
-    responses = await agency.broadcast_message(
-        "Broadcast test",
-        from_agent="broadcaster"
-    )
-    assert len(responses) == len(agency.agents) - 1
-    
-    # Test chain
-    chain_response = await agency.chain_message(
-        "Chain test",
-        chain=["first", "second", "third"]
-    )
-    assert chain_response is not None
+    findings.append(response)
+
+# Synthesize results
+await agency.send_message(
+    thread_id=research_thread.id,
+    content="Synthesize findings",
+    from_agent=lead_researcher,
+    to_agent=report_writer
+)
 ```
 
 ## Learn More
 
-- [Agency Creation](creating-agencies.md)
-- [Message Patterns](../api/messages.md)
-- [Error Handling](../user-guide/error-handling.md)
-- [Performance Tips](../user-guide/performance.md) 
+- [Creating Agents](creating-agents.md)
+- [Creating Agencies](creating-agencies.md)
+- [Advanced Features](advanced-features.md) 
