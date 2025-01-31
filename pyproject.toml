@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "multi-swarm"
-version = "0.1.0"
+version = "1.0.0"
 description = "A framework for creating collaborative AI agent swarms"
 readme = "README.md"
 authors = [
-    { name = "Bart Verduijn", email = "your.email@example.com" }  # Please update this
+    { name = "Bart Van Spitaels", email = "bart.vanspitaels@gmail.com" }  
 ]
 license = { file = "LICENSE" }
 classifiers = [
@@ -45,9 +45,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/multi-swarm"  # Please update this
-Documentation = "https://github.com/yourusername/multi-swarm#readme"  # Please update this
-Repository = "https://github.com/yourusername/multi-swarm.git"  # Please update this
+Homepage = "https://github.com/bartvanspitaels99/multi-swarm/"  # Please update this
+Documentation = "https://github.com/bartvanspitaels99/multi-swarm#readme"  # Please update this
+Repository = "https://github.com/bartvanspitaels99/multi-swarm.git"  # Please update this
 
 [tool.black]
 line-length = 100
